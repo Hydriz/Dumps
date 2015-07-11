@@ -123,11 +123,7 @@ class BALArchiver(object):
 
         Returns: Dict with the status code and response to the request.
         """
-        if not metadata.get('scanner'):
-            scanner = 'Balchivist Python Library %s' % (BALVERSION)
-            metadata['scanner'] = scanner
         tries = 0
-
         while tries < self.retries:
             try:
                 self.IAItem.modify_metadata(metadata=metadata, target=target,
