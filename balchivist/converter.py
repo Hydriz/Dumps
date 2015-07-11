@@ -45,7 +45,8 @@ class BALConverter(object):
             "smlangprop": "localname|code"
         }
         self.enwikiApi = "https://en.wikipedia.org/w/api.php"
-        self.langFile = os.path.dirname(os.path.realpath(__file__)) + '/' + "languages.json"
+        self.langFile = os.path.dirname(os.path.realpath(__file__)) + '/'
+        self.langFile += "languages.json"
         self.dbsuffixes = [
             'wiktionary',
             'wikibooks',
