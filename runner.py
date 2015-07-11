@@ -99,7 +99,7 @@ class BALRunner(object):
             'SELECT', 'type, subject, dumpdate',
             'FROM', self.dbtable,
             'WHERE', '%sprogress="done" AND is_archived="0"' % (extraconds),
-            'AND claimed_by IS NULL',
+            'AND claimed_by IS NULL AND can_archive=1',
             'ORDER BY', 'RAND()',
             'LIMIT', '1;'
         ]
@@ -268,7 +268,8 @@ Options:
             else:
                 conds = {
                     'progress': 'done',
-                    'is_archived': '0'
+                    'is_archived': '0',
+                    'can_archive': '1'
                 }
                 if self.getItemsLeft(conds) > 0:
                     item = self.getRandomItem(self.dumptype)
