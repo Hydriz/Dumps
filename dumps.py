@@ -371,12 +371,11 @@ class BALDumps(object):
                     continue
                 else:
                     self.printv("Adding new item %s on %s" % (db, dump))
-                    arcdate = converter.getDateFromWiki(dump, archivedate=True)
                     progress = self.getDumpProgress(db, dump)
                     params = {
                         'type': 'main',
                         'subject': db,
-                        'dumpdate': arcdate,
+                        'dumpdate': dump,
                         'progress': progress
                     }
                     self.sqldb.addNewItem(params=params)
@@ -386,11 +385,10 @@ class BALDumps(object):
                 if progress != 'progress':
                     self.printv("Updating dump progress for %s on %s" % (db,
                                                                          dump))
-                    arcdate = converter.getDateFromWiki(dump, archivedate=True)
                     params = {
                         'type': 'main',
                         'subject': db,
-                        'dumpdate': arcdate,
+                        'dumpdate': dump,
                         'progress': progress
                     }
                     self.sqldb.updateProgress(params=params)
@@ -403,11 +401,10 @@ class BALDumps(object):
                     # The dump is now suitable to be archived
                     self.printv("Updating can_archive for %s on %s" % (db,
                                                                        dump))
-                    arcdate = converter.getDateFromWiki(dump, archivedate=True)
                     params = {
                         'type': 'main',
                         'subject': db,
-                        'dumpdate': arcdate
+                        'dumpdate': dump
                     }
                     self.sqldb.markCanArchive(params=params)
                 else:

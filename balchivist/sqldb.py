@@ -46,6 +46,7 @@ class BALSqlDb(object):
         self.database = database
         self.dbtable = 'archive'
         self.hostname = socket.gethostname()
+        self.conv = BALConverter()
 
     def execute(self, query, params=()):
         """
@@ -115,8 +116,8 @@ class BALSqlDb(object):
 
         Returns: True if update is successful, False if an error occurred.
         """
-        conv = BALConverter()
-        arcdate = conv.getDateFromWiki(params['dumpdate'], archivedate=True)
+        arcdate = self.conv.getDateFromWiki(params['dumpdate'],
+                                            archivedate=True)
         conds = (self.hostname, params['type'], params['subject'], arcdate)
         query = [
             'UPDATE', self.dbtable,
@@ -139,8 +140,8 @@ class BALSqlDb(object):
 
         Returns: True if update is successful, False if an error occurred.
         """
-        conv = BALConverter()
-        arcdate = conv.getDateFromWiki(params['dumpdate'], archivedate=True)
+        arcdate = self.conv.getDateFromWiki(params['dumpdate'],
+                                            archivedate=True)
         conds = (params['type'], params['subject'], arcdate)
         query = [
             'UPDATE', self.dbtable,
@@ -162,8 +163,8 @@ class BALSqlDb(object):
 
         Returns: True if update is successful, False if an error occurred.
         """
-        conv = BALConverter()
-        arcdate = conv.getDateFromWiki(params['dumpdate'], archivedate=True)
+        arcdate = self.conv.getDateFromWiki(params['dumpdate'],
+                                            archivedate=True)
         conds = (params['type'], params['subject'], arcdate)
         query = [
             'UPDATE', self.dbtable,
@@ -185,8 +186,8 @@ class BALSqlDb(object):
 
         Returns: True if update is successful, False if an error occurred.
         """
-        conv = BALConverter()
-        arcdate = conv.getDateFromWiki(params['dumpdate'], archivedate=True)
+        arcdate = self.conv.getDateFromWiki(params['dumpdate'],
+                                            archivedate=True)
         conds = (params['type'], params['subject'], arcdate)
         query = [
             'UPDATE', self.dbtable,
@@ -208,8 +209,8 @@ class BALSqlDb(object):
 
         Returns: True if update is successful, False if an error occurred.
         """
-        conv = BALConverter()
-        arcdate = conv.getDateFromWiki(params['dumpdate'], archivedate=True)
+        arcdate = self.conv.getDateFromWiki(params['dumpdate'],
+                                            archivedate=True)
         conds = (params['type'], params['subject'], arcdate)
         query = [
             'UPDATE', self.dbtable,
@@ -231,8 +232,8 @@ class BALSqlDb(object):
 
         Returns: True if update is successful, False if an error occurred.
         """
-        conv = BALConverter()
-        arcdate = conv.getDateFromWiki(params['dumpdate'], archivedate=True)
+        arcdate = self.conv.getDateFromWiki(params['dumpdate'],
+                                            archivedate=True)
         conds = (params['type'], params['subject'], arcdate)
         query = [
             'UPDATE', self.dbtable,
@@ -254,8 +255,10 @@ class BALSqlDb(object):
 
         Returns: True if update is successful, False if an error occurred.
         """
+        arcdate = self.conv.getDateFromWiki(params['dumpdate'],
+                                            archivedate=True)
         conds = (params['progress'], params['type'], params['subject'],
-                 params['dumpdate'])
+                 arcdate)
         query = [
             'UPDATE', self.dbtable,
             'SET', 'progress=%s',
@@ -276,10 +279,12 @@ class BALSqlDb(object):
 
         Returns: True if update is successful, False if an error occurred.
         """
+        arcdate = self.conv.getDateFromWiki(params['dumpdate'],
+                                            archivedate=True)
         conds = (
             params['type'],
             params['subject'],
-            params['dumpdate'],
+            arcdate,
             params['progress']
         )
         query = [
