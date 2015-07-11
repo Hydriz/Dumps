@@ -221,6 +221,7 @@ class BALDumps(object):
                 else:
                     pass
                 return False
+        return True
 
     def archive(self, wikidb, dumpdate, dumpdir=None, resume=False):
         """
