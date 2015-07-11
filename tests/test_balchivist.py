@@ -32,6 +32,8 @@ def ignore(dir):
 class TestBalchivist(unittest.TestCase):
     def test_pep8(self):
         style = pep8.StyleGuide()
+        # Ignore E402: Module level import not at top of file
+        style.options.ignore += ('E402',)
         python_files = []
         errors = 0
         for root, _, files in os.walk('.'):
