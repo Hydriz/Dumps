@@ -383,6 +383,8 @@ class BALDumps(object):
             for dump in inprogress:
                 progress = self.getDumpProgress(db, dump)
                 if progress != 'progress':
+                    self.printv("Updating dump progress for %s on %s" % (db,
+                                                                         dump))
                     arcdate = converter.getDateFromWiki(dump, archivedate=True)
                     params = {
                         'type': 'main',
@@ -398,6 +400,8 @@ class BALDumps(object):
                 dumpdir = "%s/%s/%s" % (self.config.get('dumpdir'), db, dump)
                 if self.checkDumpDir(dumpdir, db, dump):
                     # The dump is now suitable to be archived
+                    self.printv("Updating can_archive for %s on %s" % (db,
+                                                                       dump))
                     params = {
                         'type': 'main',
                         'subject': db,
