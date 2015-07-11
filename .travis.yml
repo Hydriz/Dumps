@@ -1,0 +1,14 @@
+language: python
+python:
+  - "2.6"
+  - "2.7"
+  - "3.2"
+  - "3.3"
+  - "3.4"
+install:
+  - pip install pep8
+  - pip install wikitools
+  - apt-get install python-mysqldb
+script:
+  - cp settings.conf.example settings.conf
+  - nosetests
