@@ -188,6 +188,40 @@ class BALDumps(object):
             dumps.append(i.group('dump'))
         return sorted(dumps)
 
+    def checkDumpDir(self, dumpdir, wikidb, dumpdate):
+        """
+        This function is used to check if the given dump directory is complete.
+
+        - dumpdir (string): The path to the dump directory.
+        - wikidb (string): The wiki database to check.
+        - dumpdate (string): The date of the dump in %Y%m%d format.
+
+        Returns: True if dump directory is complete, False if otherwise.
+        """
+        if os.path.exists(dumpdir):
+            files = os.listdir(dumpdir)
+        else:
+            # The dump directory does not exist.
+            # Exit the rest of the function and leave it to another day.
+            if self.debug:
+                sys.stderr.write("The dump file directory does not exist!")
+            else:
+                pass
+            return False
+        allfiles = self.getDumpFiles(wikidb, dumpdate)
+        for dumpfile in allfiles:
+            if dumpfile in files:
+                continue
+            else:
+                # The dump files on the local directory is incomplete.
+                # Exit the rest of the function and leave it to another day.
+                if self.debug:
+                    sys.stderr.write("The dump files in the local directory "
+                                     "is incomplete")
+                else:
+                    pass
+                return False
+
     def archive(self, wikidb, dumpdate, dumpdir=None, resume=False):
         """
         This function is for doing the actual archiving process.
@@ -211,29 +245,11 @@ class BALDumps(object):
             dumps = "%s/%s/%s" % (self.config.get('dumpdir'), wikidb, dumpdate)
         else:
             dumps = dumpdir
-        if os.path.exists(dumps):
-            files = os.listdir(dumps)
+        if self.checkDumpDir(dumps, wikidb, dumpdate):
+            pass
         else:
-            # The dump directory does not exist.
-            # Exit the rest of the function and leave it to another day.
-            if self.debug:
-                sys.stderr.write("The dump file directory does not exist!")
-            else:
-                pass
+            # The dump directory is not suitable to be used, exit the function
             return False
-        allfiles = self.getDumpFiles(wikidb, dumpdate)
-        for dumpfile in allfiles:
-            if dumpfile in files:
-                continue
-            else:
-                # The dump files on the local directory is incomplete.
-                # Exit the rest of the function and leave it to another day.
-                if self.debug:
-                    sys.stderr.write("The dump files in the local directory "
-                                     "is incomplete")
-                else:
-                    pass
-                return False
         count = 0
         iaitem = balchivist.BALArchiver('%s-%s' % (wikidb, dumpdate))
         if resume:
@@ -342,10 +358,11 @@ class BALDumps(object):
         for private in privatedb:
             alldb.remove(private)
         for db in alldb:
-            # First check if all new dumps are registered
             dumps = self.getAllDumps(db)
             stored = self.sqldb.getAllDumps(db)
             inprogress = self.sqldb.getAllDumps(db, progress="progress")
+            cannotarc = self.sqldb.getAllDumps(db, can_archive=0)
+            # Step 1: Check if all new dumps are registered
             for dump in dumps:
                 if dump in stored:
                     self.printv("Dump of %s on %s already in the database, "
@@ -362,7 +379,7 @@ class BALDumps(object):
                         'progress': progress
                     }
                     self.sqldb.addNewItem(params=params)
-            # Then we check if the status of dumps in progress have changed
+            # Step 2: Check if the status of dumps in progress have changed
             for dump in inprogress:
                 progress = self.getDumpProgress(db, dump)
                 if progress != 'progress':
@@ -374,6 +391,19 @@ class BALDumps(object):
                         'progress': progress
                     }
                     self.sqldb.updateProgress(params=params)
+                else:
+                    continue
+            # Step 3: Check if the dump is available for archiving
+            for dump in cannotarc:
+                dumpdir = "%s/%s/%s" % (self.config.get('dumpdir'), db, dump)
+                if self.checkDumpDir(dumps, wikidb, dumpdate):
+                    # The dump is now suitable to be archived
+                    params = {
+                        'type': 'main',
+                        'subject': db,
+                        'dumpdate': arcdate
+                    }
+                    self.sqldb.markCanArchive(params=params)
                 else:
                     continue
         return True

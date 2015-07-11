@@ -6,6 +6,7 @@ CREATE TABLE archive (
 	dumpdate DATE,
 	progress VARCHAR(255),
 	claimed_by VARCHAR(255),
+	can_archive INT,
 	is_archived INT,
 	is_checked INT,
 	comments VARCHAR(255)

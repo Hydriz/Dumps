@@ -72,20 +72,27 @@ class BALSqlDb(object):
         else:
             return result
 
-    def getAllDumps(self, wikidb, progress="all"):
+    def getAllDumps(self, wikidb, progress="all", can_archive="all"):
         """
         This function is used to get all dumps of a specific wiki.
 
         - progress (string): Dumps with this progress will be returned, "all"
         for all progress statuses.
+        - can_archive (string): Dumps with this can_archive status will be
+        returned, "all" for all can_archive statuses.
 
         Returns: Dict with all dumps of a wiki.
         """
         dumps = []
+        conds = ""
         if progress == "all":
-            conds = ""
+            pass
         else:
-            conds = ' AND progress="%s"' % (progress)
+            conds += ' AND progress="%s"' % (progress)
+        if can_archive == "all":
+            pass
+        else:
+            conds += ' AND can_archive="%s"' % (can_archive)
         query = [
             'SELECT', 'dumpdate',
             'FROM', self.dbtable,
@@ -114,6 +121,30 @@ class BALSqlDb(object):
         query = [
             'UPDATE', self.dbtable,
             'SET', 'claimed_by=%s',
+            'WHERE', 'type=%s AND subject=%s AND dumpdate=%s;'
+        ]
+        try:
+            self.execute(' '.join(query), conds)
+            return True
+        except:
+            return False
+
+    def markCanArchive(self, params):
+        """
+        This function is used to update the status of whether a dump can be
+        archived.
+
+        - params (dict): Information about the item with the keys "type",
+        "subject" and "dumpdate".
+
+        Returns: True if update is successful, False if an error occurred.
+        """
+        conv = BALConverter()
+        arcdate = conv.getDateFromWiki(params['dumpdate'], archivedate=True)
+        conds = (params['type'], params['subject'], arcdate)
+        query = [
+            'UPDATE', self.dbtable,
+            'SET', 'can_archive=1',
             'WHERE', 'type=%s AND subject=%s AND dumpdate=%s;'
         ]
         try:
@@ -253,9 +284,9 @@ class BALSqlDb(object):
         )
         query = [
             'INSERT INTO', self.dbtable,
-            '(type, subject, dumpdate, progress, claimed_by, is_archived,',
-            'is_checked, comments)',
-            'VALUES', '(%s, %s, %s, %s, NULL, 0, 0, NULL);'
+            '(type, subject, dumpdate, progress, claimed_by, can_archive,',
+            'is_archived, is_checked, comments)',
+            'VALUES', '(%s, %s, %s, %s, NULL, 0, 0, 0, NULL);'
         ]
         try:
             self.execute(' '.join(query), conds)
