@@ -32,13 +32,14 @@ def ignore(dir):
 class TestBalchivist(unittest.TestCase):
     def test_pep8(self):
         style = pep8.StyleGuide()
+        python_files = []
         errors = 0
         for root, _, files in os.walk('.'):
             if ignore(root):
                 continue
             for f in files:
                 if f.endswith('.py'):
-                    os.path.join(root, f)
+                    python_files.append(os.path.join(root, f))
                 else:
                     continue
             errors += style.check_files(python_files).total_errors
