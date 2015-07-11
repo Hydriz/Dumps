@@ -396,7 +396,7 @@ class BALDumps(object):
             # Step 3: Check if the dump is available for archiving
             for dump in cannotarc:
                 dumpdir = "%s/%s/%s" % (self.config.get('dumpdir'), db, dump)
-                if self.checkDumpDir(dumps, wikidb, dumpdate):
+                if self.checkDumpDir(dumpdir, db, dump):
                     # The dump is now suitable to be archived
                     params = {
                         'type': 'main',
