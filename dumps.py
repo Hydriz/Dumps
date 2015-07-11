@@ -253,6 +253,7 @@ class BALDumps(object):
             return False
         count = 0
         iaitem = balchivist.BALArchiver('%s-%s' % (wikidb, dumpdate))
+        allfiles = self.getDumpFiles(wikidb, dumpdate)
         if resume:
             items = []
             iafiles = iaitem.getFileList()
