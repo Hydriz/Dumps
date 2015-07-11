@@ -9,6 +9,7 @@ install:
   - pip install pep8
   - pip install -r requirements.txt
   - sudo apt-get install python-mysqldb
+  - pip install MySQL-python
 script:
   - cp settings.conf.example settings.conf
   - nosetests
