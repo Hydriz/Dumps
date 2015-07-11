@@ -403,6 +403,7 @@ class BALDumps(object):
                     # The dump is now suitable to be archived
                     self.printv("Updating can_archive for %s on %s" % (db,
                                                                        dump))
+                    arcdate = converter.getDateFromWiki(dump, archivedate=True)
                     params = {
                         'type': 'main',
                         'subject': db,
