@@ -8,7 +8,7 @@ python:
 install:
   - pip install pep8
   - pip install wikitools
-  - apt-get install python-mysqldb
+  - sudo apt-get install python-mysqldb
 script:
   - cp settings.conf.example settings.conf
   - nosetests
