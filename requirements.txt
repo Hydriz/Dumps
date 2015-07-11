@@ -1,0 +1,2 @@
+internetarchive >= 0.8.3
+wikitools >= 1.3
