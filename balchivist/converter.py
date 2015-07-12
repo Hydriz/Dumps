@@ -280,7 +280,7 @@ class BALConverter(object):
         else:
             for suffix in self.dbsuffixes:
                 if suffix in wikidb:
-                    code = wikidb.replace(suffix, '')
+                    code = wikidb.replace(suffix, '').replace('_', '-')
                     langname = self.getLangName(code)
                     project = suffix.title()
                     if langname:
