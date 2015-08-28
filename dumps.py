@@ -99,8 +99,13 @@ class BALDumps(object):
                 return output
             elif status == "in-progress" or status == "waiting":
                 progress += 1
-            elif status == "done":
+            elif status == "done" or status == "skipped":
                 done += 1
+            else:
+                # Return output in case a new status appears.
+                # We do not want to corrupt our database with false entries
+                output = "unknown"
+                return output
         if progress > 0:
             output = "progress"
         elif progress == 0 and done > 0:
