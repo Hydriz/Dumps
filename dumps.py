@@ -369,6 +369,7 @@ class BALDumps(object):
             stored = self.sqldb.getAllDumps(db)
             inprogress = self.sqldb.getAllDumps(db, progress="progress")
             cannotarc = self.sqldb.getAllDumps(db, can_archive=0)
+            failed = self.sqldb.getAllDumps(db, progress="error")
             # Step 1: Check if all new dumps are registered
             for dump in dumps:
                 if dump in stored:
@@ -413,6 +414,21 @@ class BALDumps(object):
                         'dumpdate': dump
                     }
                     self.sqldb.markCanArchive(params=params)
+                else:
+                    continue
+            # Step 4: Check if failed dumps really did fail or was restarted
+            for dump in failed:
+                progress = self.getDumpProgress(db, dump)
+                if progress != 'error' or progress != 'unknown':
+                    self.printv("Updating dump progress for %s on %s" % (db,
+                                                                         dump))
+                    params = {
+                        'type': 'main',
+                        'subject': db,
+                        'dumpdate': dump,
+                        'progress': progress
+                    }
+                    self.sqldb.updateProgress(params=params)
                 else:
                     continue
         return True
