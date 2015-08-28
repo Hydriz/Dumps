@@ -419,7 +419,7 @@ class BALDumps(object):
             # Step 4: Check if failed dumps really did fail or was restarted
             for dump in failed:
                 progress = self.getDumpProgress(db, dump)
-                if progress != 'error' or progress != 'unknown':
+                if progress != 'error' and progress != 'unknown':
                     self.printv("Updating dump progress for %s on %s" % (db,
                                                                          dump))
                     params = {
