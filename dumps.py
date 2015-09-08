@@ -66,6 +66,17 @@ class BALDumps(object):
         else:
             pass
 
+    def printd(self, message):
+        """
+        This function is used to write output into stderr if debug == True.
+
+        - message (string): The message to output.
+        """
+        if self.debug:
+            sys.stderr.write("%s\n" % (message))
+        else:
+            pass
+
     def getDumpProgress(self, wikidb, dumpdate):
         """
         This function is used to get the progress of a dump.
@@ -208,10 +219,7 @@ class BALDumps(object):
         else:
             # The dump directory does not exist.
             # Exit the rest of the function and leave it to another day.
-            if self.debug:
-                sys.stderr.write("The dump file directory does not exist!")
-            else:
-                pass
+            self.printd("The dump file directory does not exist!")
             return False
         allfiles = self.getDumpFiles(wikidb, dumpdate)
         for dumpfile in allfiles:
@@ -220,11 +228,8 @@ class BALDumps(object):
             else:
                 # The dump files on the local directory is incomplete.
                 # Exit the rest of the function and leave it to another day.
-                if self.debug:
-                    sys.stderr.write("The dump files in the local directory "
-                                     "is incomplete")
-                else:
-                    pass
+                self.printd("The dump files in the local directory is "
+                            "incomplete")
                 return False
         return True
 
@@ -306,10 +311,7 @@ class BALDumps(object):
             else:
                 upload = iaitem.uploadFile(dumpfile, debug=self.debug)
             if upload:
-                if self.debug:
-                    sys.stderr.write(upload)
-                else:
-                    pass
+                self.printd(upload)
                 count += 1
             else:
                 return False
