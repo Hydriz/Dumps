@@ -73,7 +73,8 @@ class BALSqlDb(object):
         else:
             return result
 
-    def getAllDumps(self, wikidb, progress="all", can_archive="all"):
+    def getAllDumps(self, wikidb, progress="all", can_archive="all",
+                    is_archived="all", is_checked="all"):
         """
         This function is used to get all dumps of a specific wiki.
 
@@ -81,19 +82,36 @@ class BALSqlDb(object):
         for all progress statuses.
         - can_archive (string): Dumps with this can_archive status will be
         returned, "all" for all can_archive statuses.
+        - is_archived (string): Dumps with this is_archived status will be
+        returned, "all" for all is_archived statuses.
+        - is_checked (string): Dumps with this is_checked status will be
+        returned, "all" for all is_checked statuses.
 
         Returns: Dict with all dumps of a wiki.
         """
         dumps = []
         conds = ""
+
         if progress == "all":
             pass
         else:
             conds += ' AND progress="%s"' % (progress)
+
         if can_archive == "all":
             pass
         else:
             conds += ' AND can_archive="%s"' % (can_archive)
+
+        if is_archived == "all":
+            pass
+        else:
+            conds += ' AND is_archived="%s"' % (is_archived)
+
+        if is_checked == "all":
+            pass
+        else:
+            conds += ' AND is_checked="%s"' % (is_checked)
+
         query = [
             'SELECT', 'dumpdate',
             'FROM', self.dbtable,
