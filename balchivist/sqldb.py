@@ -148,7 +148,7 @@ class BALSqlDb(object):
         except:
             return False
 
-    def markCanArchive(self, params):
+    def updateCanArchive(self, params):
         """
         This function is used to update the status of whether a dump can be
         archived.
@@ -160,10 +160,11 @@ class BALSqlDb(object):
         """
         arcdate = self.conv.getDateFromWiki(params['dumpdate'],
                                             archivedate=True)
-        conds = (params['type'], params['subject'], arcdate)
+        conds = (params['can_archive'], params['type'], params['subject'],
+                 arcdate)
         query = [
             'UPDATE', self.dbtable,
-            'SET', 'can_archive=1',
+            'SET', 'can_archive=%d',
             'WHERE', 'type=%s AND subject=%s AND dumpdate=%s;'
         ]
         try:

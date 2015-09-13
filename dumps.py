@@ -373,6 +373,7 @@ class BALDumps(object):
             cannotarc = self.sqldb.getAllDumps(db, progress="done",
                                                can_archive=0)
             failed = self.sqldb.getAllDumps(db, progress="error")
+            canarc = self.sqldb.getAllDumps(db, can_archive=1)
             # Step 1: Check if all new dumps are registered
             for dump in dumps:
                 if dump in stored:
@@ -414,9 +415,10 @@ class BALDumps(object):
                     params = {
                         'type': 'main',
                         'subject': db,
-                        'dumpdate': dump
+                        'dumpdate': dump,
+                        'can_archive': 1
                     }
-                    self.sqldb.markCanArchive(params=params)
+                    self.sqldb.updateCanArchive(params=params)
                 else:
                     continue
             # Step 4: Check if failed dumps really did fail or was restarted
@@ -434,6 +436,22 @@ class BALDumps(object):
                     self.sqldb.updateProgress(params=params)
                 else:
                     continue
+            # Step 5: Reset the can_archive statuses of old dumps
+            for dump in canarc:
+                dumpdir = "%s/%s/%s" % (self.config.get('dumpdir'), db, dump)
+                if self.checkDumpDir(dumpdir, db, dump):
+                    continue
+                else:
+                    # The dump is now unable to be archived automatically
+                    self.printv("Updating can_archive for %s on %s" % (db,
+                                                                       dump))
+                    params = {
+                        'type': 'main',
+                        'subject': db,
+                        'dumpdate': dump,
+                        'can_archive': 0
+                    }
+                    self.sqldb.updateCanArchive(params=params)
         return True
 
 if __name__ == '__main__':
