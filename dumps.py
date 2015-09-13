@@ -370,7 +370,8 @@ class BALDumps(object):
             dumps = self.getAllDumps(db)
             stored = self.sqldb.getAllDumps(db)
             inprogress = self.sqldb.getAllDumps(db, progress="progress")
-            cannotarc = self.sqldb.getAllDumps(db, can_archive=0)
+            cannotarc = self.sqldb.getAllDumps(db, progress="done",
+                                               can_archive=0)
             failed = self.sqldb.getAllDumps(db, progress="error")
             # Step 1: Check if all new dumps are registered
             for dump in dumps:
