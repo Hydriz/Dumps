@@ -164,7 +164,7 @@ class BALSqlDb(object):
                  arcdate)
         query = [
             'UPDATE', self.dbtable,
-            'SET', 'can_archive=%d',
+            'SET', 'can_archive=%s',
             'WHERE', 'type=%s AND subject=%s AND dumpdate=%s;'
         ]
         try:
