@@ -251,6 +251,10 @@ class BALDumps(object):
         project = converter.getNameFromDB(wikidb, format='project')
         datename = converter.getDateFromWiki(dumpdate)
         arcdate = converter.getDateFromWiki(dumpdate, archivedate=True)
+        checksums = [
+            'md5sums.txt',
+            'sha1sums.txt'
+        ]
 
         if dumpdir is None:
             dumps = "%s/%s/%s" % (self.config.get('dumpdir'), wikidb, dumpdate)
@@ -264,6 +268,8 @@ class BALDumps(object):
         count = 0
         iaitem = balchivist.BALArchiver('%s-%s' % (wikidb, dumpdate))
         allfiles = self.getDumpFiles(wikidb, dumpdate)
+
+        # If --resume is given, check which files are missing
         if resume:
             items = []
             iafiles = iaitem.getFileList()
@@ -278,6 +284,16 @@ class BALDumps(object):
                 return True
         else:
             items = allfiles
+
+        # Check if checksums are available and add them if they do
+        for checksum in checksums:
+            filename = "%s-%s-%s" % (wikidb, dumpdate, checksum)
+            filepath = "%s/%s" % (dumps, filename)
+            if os.path.exists(filepath):
+                items.append(filename)
+            else:
+                continue
+
         os.chdir(dumps)
         for dumpfile in items:
             self.printv("Uploading file: %s" % (dumpfile))
