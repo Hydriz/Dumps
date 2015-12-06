@@ -487,13 +487,20 @@ class BALSqlDb(object):
 
         results = self.select(columns, ' AND '.join(conds), options)
         if results is None:
-            ou
-        for result in results:
+            # This should not be triggered at all. Use self.getItemsLeft()
+            # to verify first before running this function.
             output = {
-                'type': result[0],
-                'subject': result[1],
-                'date': result[2].strftime("%Y%m%d")
+                'type': dumptype,
+                'subject': None,
+                'date': None
             }
+        else:
+            for result in results:
+                output = {
+                    'type': result[0],
+                    'subject': result[1],
+                    'date': result[2].strftime("%Y%m%d")
+                }
 
         # Claim the item from the database server if not in debug mode
         if debug:

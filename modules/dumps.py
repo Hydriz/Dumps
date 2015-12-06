@@ -384,14 +384,12 @@ class BALMDumps(object):
                 return False
         return True
 
-    def check(self, subject, date, verbose=False, debug=False):
+    def check(self, subject, date):
         """
         This function checks if the uploaded dump is really complete.
 
         - subject (string): The wiki database to check.
         - date (string): The date of the dump in %Y%m%d format.
-        - verbose (boolean): Whether or not to increase verbosity.
-        - debug (boolean): Whether or not to run in debug mode.
 
         Returns: True if complete, False if errors have occurred.
         """
@@ -412,15 +410,7 @@ class BALMDumps(object):
             else:
                 # The Internet Archive have got incomplete items
                 complete = False
-        if (complete):
-            self.common.giveMessage("All the files have been uploaded, "
-                                    "marking as checked")
-            self.sqldb.markChecked(params=params)
-            return True
-        else:
-            self.common.giveMessage("Internet Archive item is incomplete!")
-            self.sqldb.markFailedCheck(params=params)
-            return False
+        return complete
 
     def update(self):
         """
@@ -549,8 +539,7 @@ class BALMDumps(object):
                                         " archive" % (subject, date))
                 self.sqldb.markFailedArchive(updatedetails)
         elif (job == "check"):
-            status = self.check(subject=subject, date=date,
-                                verbose=self.verbose, debug=self.debug)
+            status = self.check(subject=subject, date=date)
             if (self.debug):
                 return status
             elif (self.debug is False and status):
