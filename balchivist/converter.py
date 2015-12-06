@@ -20,10 +20,8 @@ import os
 import time
 
 import wikitools
-
-
-class IncorrectUsage(Exception):
-    pass
+from exception import IncorrectUsage
+import message
 
 
 class BALConverter(object):
@@ -300,5 +298,6 @@ class BALConverter(object):
         else:
             return output
 
-if __name__ == '__main__':
-    raise IncorrectUsage("Script cannot be called directly")
+if __name__ == "__main__":
+    BALMessage = message.BALMessage()
+    raise IncorrectUsage(BALMessage.getMessage('exception-incorrectusage'))

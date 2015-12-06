@@ -5,6 +5,10 @@ database = balchivist
 host = localhost
 # The file containing your MySQL credentials
 defaults_file = ~/.my.cnf
+# The file to log all events and messages to
+logfile = output.log
+# The modules to be made available to Balchivist (those in the modules directory without the ".py" extension)
+modules = ["dumps"]
 
 [dumps]
 # The directory containing the dump files in the format:

@@ -19,10 +19,8 @@ import time
 import internetarchive
 
 from . import BALVERSION
-
-
-class IncorrectUsage(Exception):
-    pass
+from exception import IncorrectUsage
+import message
 
 
 class BALArchiver(object):
@@ -121,7 +119,7 @@ class BALArchiver(object):
         - priority (int): The priority for the metadata update task.
         - debug (boolean): Whether or not to run this function in debug mode.
 
-        Returns: Dict with the status code and response to the request.
+        Returns: True if the modification is successful, False if otherwise.
         """
         if not metadata.get('scanner'):
             scanner = 'Balchivist Python Library %s' % (BALVERSION)
@@ -145,4 +143,5 @@ class BALArchiver(object):
                     time.sleep(60*tries)
 
 if __name__ == '__main__':
-    raise IncorrectUsage("Script cannot be called directly")
+    BALMessage = message.BALMessage()
+    raise IncorrectUsage(BALMessage.getMessage('exception-incorrectusage'))

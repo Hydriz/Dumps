@@ -1,0 +1,9 @@
+{
+    "@metadata": {
+        "authors": [
+            "Hydriz"
+        ]
+    },
+    "exception-incorrectusage": "Error: This script cannot be used directly! Please use runner.py instead.",
+    "error-unknowntype": "Error: There are no modules that can support this unknown type."
+}

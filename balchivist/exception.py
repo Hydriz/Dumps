@@ -1,5 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright (C) 2015 Hydriz Scholz
-#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -10,16 +11,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along
-# with this program. If not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA, or visit
-# <http://www.gnu.org/copyleft/gpl.html>
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-BALVERSION = '1.2.0'
 
-from archiver import BALArchiver
-from common import BALCommon, IncorrectUsage
-from config import BALConfig
-from converter import BALConverter
-from message import BALMessage
-from sqldb import BALSqlDb
+class IncorrectUsage(Exception):
+    pass

@@ -17,9 +17,8 @@
 import ConfigParser
 import os
 
-
-class IncorrectUsage(Exception):
-    pass
+from exception import IncorrectUsage
+import message
 
 
 class BALConfig(object):
@@ -53,4 +52,5 @@ class BALConfig(object):
         return config.get(self.section, variable)
 
 if __name__ == '__main__':
-    raise IncorrectUsage("Script cannot be called directly")
+    BALMessage = message.BALMessage()
+    raise IncorrectUsage(BALMessage.getMessage('exception-incorrectusage'))
