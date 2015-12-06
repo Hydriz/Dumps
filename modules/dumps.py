@@ -399,11 +399,6 @@ class BALMDumps(object):
         iafiles = iaitem.getFileList()
         self.common.giveMessage("Checking if all files are uploaded for %s "
                                 "on %s" % (subject, date))
-        params = {
-            'type': 'main',
-            'subject': subject,
-            'date': date
-        }
         for dumpfile in allfiles:
             if (dumpfile in iafiles):
                 continue
