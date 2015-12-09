@@ -34,8 +34,19 @@ class BALArchiver(object):
         - retries (int): The number of times to retry a request to the server.
         - retrysleep (int): Time (in seconds) to sleep before the next request.
         """
-        self.IAItem = internetarchive.Item(identifier, max_retries=retries)
         self.retries = retries
+        tries = 0
+        while tries < self.retries:
+            try:
+                self.IAItem = internetarchive.Item(identifier, max_retries=retries)
+                break
+            except:
+                tries += 1
+                if (tries == self.retries):
+                    return None
+                    break
+                else:
+                    time.sleep(60*tries)
 
         # Files that are present by default in all Internet Archive items
         self.defaultFiles = [
