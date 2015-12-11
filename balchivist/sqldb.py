@@ -229,26 +229,39 @@ class BALSqlDb(object):
                 dumps.append(result[0].strftime("%Y%m%d"))
         return dumps
 
-    def claimItem(self, params):
+    def getConds(self, params):
         """
-        This function is used to claim an item from the server.
+        This function is used for getting the conditions necessary for the
+        SQL query to work.
 
         - params (dict): Information about the item with the keys "type",
-        "subject" and "dumpdate".
+        "subject" and "date".
 
-        Returns: True if update is successful, False if an error occurred.
+        Returns: String with the SQL-like conditions.
         """
         arcdate = self.conv.getDateFromWiki(params['date'],
                                             archivedate=True)
-        values = {
-            'claimed_by': '"%s"' % (self.hostname)
-        }
         conds = [
             'type="%s"' % (params['type']),
             'subject="%s"' % (params['subject']),
             'dumpdate="%s"' % (arcdate)
         ]
-        results = self.update(values=values, conds=' AND '.join(conds))
+        return ' AND '.join(conds)
+
+    def claimItem(self, params):
+        """
+        This function is used to claim an item from the server.
+
+        - params (dict): Information about the item with the keys "type",
+        "subject" and "date".
+
+        Returns: True if update is successful, False if an error occurred.
+        """
+        values = {
+            'claimed_by': '"%s"' % (self.hostname)
+        }
+        conds = self.getConds(params=params)
+        results = self.update(values=values, conds=conds)
         if results:
             return True
         else:
@@ -260,21 +273,15 @@ class BALSqlDb(object):
         archived.
 
         - params (dict): Information about the item with the keys "type",
-        "subject" and "dumpdate".
+        "subject" and "date".
 
         Returns: True if update is successful, False if an error occurred.
         """
-        arcdate = self.conv.getDateFromWiki(params['date'],
-                                            archivedate=True)
         values = {
             'can_archive': '"%s"' % (params['can_archive'])
         }
-        conds = [
-            'type="%s"' % (params['type']),
-            'subject="%s"' % (params['subject']),
-            'dumpdate="%s"' % (arcdate)
-        ]
-        results = self.update(values=values, conds=' AND '.join(conds))
+        conds = self.getConds(params=params)
+        results = self.update(values=values, conds=conds)
         if results:
             return True
         else:
@@ -285,22 +292,16 @@ class BALSqlDb(object):
         This function is used to mark an item as archived after doing so.
 
         - params (dict): Information about the item with the keys "type",
-        "subject" and "dumpdate".
+        "subject" and "date".
 
         Returns: True if update is successful, False if an error occurred.
         """
-        arcdate = self.conv.getDateFromWiki(params['date'],
-                                            archivedate=True)
         values = {
             'is_archived': '"1"',
             'claimed_by': 'NULL'
         }
-        conds = [
-            'type="%s"' % (params['type']),
-            'subject="%s"' % (params['subject']),
-            'dumpdate="%s"' % (arcdate)
-        ]
-        results = self.update(values=values, conds=' AND '.join(conds))
+        conds = self.getConds(params=params)
+        results = self.update(values=values, conds=conds)
         if results:
             return True
         else:
@@ -311,22 +312,16 @@ class BALSqlDb(object):
         This function is used to mark an item as checked after doing so.
 
         - params (dict): Information about the item with the keys "type",
-        "subject" and "dumpdate".
+        "subject" and "date".
 
         Returns: True if update is successful, False if an error occurred.
         """
-        arcdate = self.conv.getDateFromWiki(params['date'],
-                                            archivedate=True)
         values = {
             'is_checked': '"1"',
             'claimed_by': 'NULL'
         }
-        conds = [
-            'type="%s"' % (params['type']),
-            'subject="%s"' % (params['subject']),
-            'dumpdate="%s"' % (arcdate)
-        ]
-        results = self.update(values=values, conds=' AND '.join(conds))
+        conds = self.getConds(params=params)
+        results = self.update(values=values, conds=conds)
         if results:
             return True
         else:
@@ -337,22 +332,16 @@ class BALSqlDb(object):
         This function is used to mark an item as failed when archiving it.
 
         - params (dict): Information about the item with the keys "type",
-        "subject" and "dumpdate".
+        "subject" and "date".
 
         Returns: True if update is successful, False if an error occurred.
         """
-        arcdate = self.conv.getDateFromWiki(params['date'],
-                                            archivedate=True)
         values = {
             'is_archived': '"2"',
             'claimed_by': 'NULL'
         }
-        conds = [
-            'type="%s"' % (params['type']),
-            'subject="%s"' % (params['subject']),
-            'dumpdate="%s"' % (arcdate)
-        ]
-        results = self.update(values=values, conds=' AND '.join(conds))
+        conds = self.getConds(params=params)
+        results = self.update(values=values, conds=conds)
         if results:
             return True
         else:
@@ -363,22 +352,16 @@ class BALSqlDb(object):
         This function is used to mark an item as failed when checking it.
 
         - params (dict): Information about the item with the keys "type",
-        "subject" and "dumpdate".
+        "subject" and "date".
 
         Returns: True if update is successful, False if an error occurred.
         """
-        arcdate = self.conv.getDateFromWiki(params['date'],
-                                            archivedate=True)
         values = {
             'is_checked': '"2"',
             'claimed_by': 'NULL'
         }
-        conds = [
-            'type="%s"' % (params['type']),
-            'subject="%s"' % (params['subject']),
-            'dumpdate="%s"' % (arcdate)
-        ]
-        results = self.update(values=values, conds=' AND '.join(conds))
+        conds = self.getConds(params=params)
+        results = self.update(values=values, conds=conds)
         if results:
             return True
         else:
@@ -389,21 +372,15 @@ class BALSqlDb(object):
         This function is used to update the progress of a dump.
 
         - params (dict): Information about the item with the keys "type",
-        "subject", "dumpdate" and "progress".
+        "subject", "date" and "progress".
 
         Returns: True if update is successful, False if an error occurred.
         """
-        arcdate = self.conv.getDateFromWiki(params['date'],
-                                            archivedate=True)
         values = {
             'progress': '"%s"' % (params['progress'])
         }
-        conds = [
-            'type="%s"' % (params['type']),
-            'subject="%s"' % (params['subject']),
-            'dumpdate="%s"' % (arcdate)
-        ]
-        results = self.update(values=values, conds=' AND '.join(conds))
+        conds = self.getConds(params=params)
+        results = self.update(values=values, conds=conds)
         if results:
             return True
         else:
@@ -414,7 +391,7 @@ class BALSqlDb(object):
         This function is used to insert a new item into the database.
 
         - params (dict): Information about the item with the keys "type",
-        "subject", "dumpdate" and "progress".
+        "subject", "date" and "progress".
 
         Returns: True if update is successful, False if an error occurred.
         """
