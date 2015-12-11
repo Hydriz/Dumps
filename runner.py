@@ -182,12 +182,17 @@ Options:
 
         while True:
             if (self.subject is not None and self.date is not None):
+                # --subject and --date are specified, work on them only.
                 if (self.type is None):
                     self.usage("Error: Please specify a --type!")
                     break
                 else:
                     self.dispatch(module=self.type)
                     break
+            elif (self.type is not None):
+                # --type was given, so we assume that the user only wants to
+                # be working on the given type and no other modules.
+                self.dispatch(module=self.type)
             else:
                 # TODO: We should be able to randomize between different
                 # modules so that the backlog can be cleared evenly.
@@ -198,20 +203,20 @@ Options:
                     else:
                         # An error has occurred, exit immediately
                         self.usage()
+                        break
 
-                if (self.debug):
-                    self.common.giveMessage("Nothing to be done!")
-                    break
-                elif (self.crontab):
-                    # Crontab mode is active, exit when everything is done
-                    break
-                else:
-                    # Allow the script to sleep for 6 hours
-                    timenow = time.strftime("%Y-%m-%d %H:%M:%S",
-                                            time.localtime())
-                    self.common.giveMessage("Sleeping for 6 hours, %s" %
-                                            timenow)
-                    time.sleep(60*60*6)
+            # Determine if we should exit the script now
+            if (self.debug):
+                self.common.giveMessage("Nothing to be done!")
+                break
+            elif (self.crontab):
+                # Crontab mode is active, exit when everything is done
+                break
+            else:
+                # Allow the script to sleep for 6 hours
+                timenow = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                self.common.giveMessage("Sleeping for 6 hours, %s" % (timenow))
+                time.sleep(60*60*6)
 
 if __name__ == '__main__':
     BALRunner = BALRunner()
