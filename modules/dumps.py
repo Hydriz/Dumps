@@ -578,8 +578,12 @@ class BALMDumps(object):
             self.common.giveError("Error: --subject was given but not --date")
             return False
         elif (job not in self.jobs):
-            self.common.giveError("Error: %s is not a supported job!" % (job))
-            return False
+            msg = "Warning: The %s job is not supported by the dumps " % (job)
+            msg += "module. Skipping any additional processing..."
+            self.common.giveDebugMessage(msg)
+            # We return True here because the job may be supported by another
+            # module and we do not want to exit the script prematurely.
+            return True
         elif (subject is None and date is None):
             continuous = True
         else:
