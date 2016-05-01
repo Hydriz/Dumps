@@ -539,7 +539,7 @@ class BALMDumps(object):
                 return status
             elif (self.debug is False and status):
                 self.common.giveMessage("Marking %s on %s as checked" %
-                                       (subject, date))
+                                        (subject, date))
                 self.sqldb.markChecked(updatedetails)
             else:
                 self.common.giveMessage("Marking %s on %s as failed"
