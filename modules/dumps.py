@@ -33,7 +33,7 @@ class BALMDumps(object):
         - argparse (boolean): Whether or not the class was called during the
         argparse stage.
         - params (dict): Information about what is to be done about a given
-        item. For this module, "resume", "verbose" and "debug" are necessary.
+        item. The "verbose" and "debug" parameters are necessary.
         - sqldb (object): A call to the BALSqlDb class with the required
         parameters.
         """
@@ -50,7 +50,6 @@ class BALMDumps(object):
             self.verbose = False
             self.debug = False
         else:
-            self.resume = params['resume']
             self.verbose = params['verbose']
             self.debug = params['debug']
 
@@ -80,9 +79,8 @@ class BALMDumps(object):
             description="Module for archiving the full Wikimedia wiki dumps."
         )
         parser.add_argument("-j", "--job", action="store",
-                            choices=["archive", "check", "update"],
-                            help="The job to execute, can be either "
-                                 "\"archive\", \"check\" or \"update\".")
+                            choices=self.jobs, default="archive"
+                            help="The job to execute.")
         parser.add_argument("-w", "--wiki", action="store",
                             help="The wiki to work on.")
         parser.add_argument("-d", "--date", action="store",
@@ -93,6 +91,7 @@ class BALMDumps(object):
                             default=False,
                             help="Resume uploading a wiki dump instead of "
                             "restarting all over.")
+        parser.set_defaults(action="dumps")
 
     def getDumpProgress(self, subject, date):
         """
@@ -579,67 +578,41 @@ class BALMDumps(object):
                                         " check" % (subject, date))
                 self.sqldb.markFailedCheck(updatedetails)
 
-    def execute(self, args=None, params={}):
+    def execute(self, args=None):
         """
         This function is for the main execution of the module and is directly
         called by runner.py.
 
         - args (namespace): A namespace of all the arguments from argparse.
-        - params (dict): Information about the item to work on, should contain
-        "job", "subject", "date" and "path".
 
         Returns True if all required processing is successful, False if an
         error has occurred.
         """
-        if (args is None):
-            pass
-        else:
-            params = {
-                'job': args.job,
-                'path': args.path,
-                'subject': args.wiki,
-                'date': args.date
-            }
         continuous = False
-        if (params['job'] is None):
-            # Set it to the default job, which is to archive
-            job = "archive"
-        else:
-            job = params['job']
-
-        path = params['path']
-        subject = params['subject']
-        date = params['date']
-
-        # Process the given arguments and make sure that we get what we need
-        if (job == "update"):
-            return self.update()
+        if (args is None) or (subject is None and date is None):
+            # It is likely that --auto has been declared when args is None
+            continuous = True
         elif (subject is None and date is not None):
-            self.common.giveError("Error: --date was given but not --subject")
+            self.common.giveError("Error: --date was given but not --wiki")
             return False
         elif (subject is not None and date is None):
-            self.common.giveError("Error: --subject was given but not --date")
+            self.common.giveError("Error: --wiki was given but not --date")
             return False
-        elif (job not in self.jobs):
-            msg = "Warning: The %s job is not supported by the dumps " % (job)
-            msg += "module. Skipping any additional processing..."
-            self.common.giveDebugMessage(msg)
-            # We return True here because the job may be supported by another
-            # module and we do not want to exit the script prematurely.
-            return True
-        elif (subject is None and date is None):
-            continuous = True
+        elif (args.job == "update"):
+            return self.update()
         else:
             pass
 
         if (continuous):
-            while self.getItemsLeft(job=job) > 0:
-                itemdetails = self.getRandomItem(job=job)
+            while self.getItemsLeft(job=args.job) > 0:
+                itemdetails = self.getRandomItem(job=args.job)
                 subject = itemdetails['subject']
                 date = itemdetails['date']
-                self.dispatch(job=job, subject=subject, date=date, path=path)
+                self.dispatch(job=args.job, subject=subject, date=date,
+                              path=args.path)
         else:
-            self.dispatch(job=job, subject=subject, date=date, path=path)
+            self.dispatch(job=args.job, subject=subject, date=date,
+                          path=args.path)
 
         return True
 
