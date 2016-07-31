@@ -5,5 +5,6 @@
         ]
     },
     "exception-incorrectusage": "Error: This script cannot be used directly! Please use runner.py instead.",
+    "exception-nomodules": "Error: There are no modules installed in settings.conf! Please install at least one module so that the script can do something.",
     "error-unknowntype": "Error: There are no modules that can support this unknown type."
 }

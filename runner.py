@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import argparse
 import getopt
 import json
 import sys
@@ -217,6 +218,90 @@ Options:
                 timenow = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
                 self.common.giveMessage("Sleeping for 6 hours, %s" % (timenow))
                 time.sleep(60*60*6)
+
+    def executeArgParse(self):
+        """
+        This function is the main execution function for the archiving scripts.
+
+        Note that this function uses the argparse module and will replace the
+        original execute function above once it is ready.
+
+        Some notes:
+        * Before the "args = parser.parse_args()" line, we need to be able to
+        parse the required arguments for every module so that we know what to
+        accept as arguments.
+        """
+        IncorrectUsage = balchivist.exception.IncorrectUsage
+        # Main parser for all generic arguments
+        parser = argparse.ArgumentParser(
+            description="A Python library for archiving datasets to the "
+                        "Internet Archive.",
+            epilog="For more information, visit the GitHub repository: "
+                   "https://github.com/Hydriz/Balchivist"
+        )
+        parser.add_argument("-D", "--debug", action="store_true",
+                            default=False,
+                            help="Don't modify anything, but output the "
+                                 "progress.")
+        parser.add_argument("-v", "--verbose", action="store_true",
+                            default=False,
+                            help="Provide more verbosity in output.")
+        parser.add_argument("-c", "--crontab", action="store_true",
+                            default=False,
+                            help="Crontab mode: Exit when everything is done "
+                                 "instead of sleeping. Useful if you do not "
+                                 "intend to run the script forever.")
+        parser.add_argument("-a", "--auto", action="store_true",
+                            default=False,
+                            help="Autonomous mode: Automatically pick an item "
+                            "that needs to be worked on. Can be used together "
+                            "with --crontab to exit once all items are "
+                            "completed, else the script will sleep for a "
+                            "certain amount of time.")
+
+        # Process the arguments that we currently have so that we know if the
+        # next few arguments is still needed
+        args, remainders = parser.parse_known_args()
+        if (args.auto):
+            self.autonomous(debug=args.debug, verbose=args.verbose,
+                            crontab=args.crontab)
+        else:
+            pass
+
+        # Declare all the necessary arguments used by each individual modules
+        if (self.modules == list()):
+            # There are no modules listed, exit the script now
+            msg = self.message.getMessage('exception-nomodules')
+            raise IncorrectUsage(msg)
+        else:
+            pass
+
+        subparser = parser.add_subparsers(
+            title="Dataset types",
+            description="The type of datasets to work on."
+        )
+        for module in self.modules:
+            classname = "BALM" + module.title()
+            ClassModule = getattr(modules, classname)(argparse=True)
+            ClassModule.argparse(subparser=subparser)
+
+        args = parser.parse_args()
+        params = {
+            'resume': args.resume,
+            'verbose': args.verbose,
+            'debug': args.debug
+        }
+        if (args.subparser_name in self.modules):
+            classtype = "BALM" + args.subparser_name.title()
+        else:
+            msg = self.message.getMessage('error-unknowntype')
+            msg += "\nModule %s is not supported!" % (args.subparser_name)
+            raise IncorrectUsage(msg)
+
+        ClassModule = getattr(modules, classtype)(params=params,
+                                                  sqldb=self.sqldb)
+        return ClassModule.execute(args=args)
+
 
 if __name__ == '__main__':
     BALRunner = BALRunner()

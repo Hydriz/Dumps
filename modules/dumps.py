@@ -24,12 +24,14 @@ import balchivist
 
 
 class BALMDumps(object):
-    def __init__(self, params={}, sqldb=None):
+    def __init__(self, argparse=False, params={}, sqldb=None):
         """
         This module is for archiving the main database dumps provided by the
         Wikimedia Foundation (available at <https://dumps.wikimedia.org>) to
         the Internet Archive.
 
+        - argparse (boolean): Whether or not the class was called during the
+        argparse stage.
         - params (dict): Information about what is to be done about a given
         item. For this module, "resume", "verbose" and "debug" are necessary.
         - sqldb (object): A call to the BALSqlDb class with the required
@@ -43,11 +45,16 @@ class BALMDumps(object):
         self.sizehint = "107374182400"
 
         self.config = balchivist.BALConfig('dumps')
-        self.resume = params['resume']
-        self.verbose = params['verbose']
-        self.debug = params['debug']
-        self.sqldb = sqldb
 
+        if (argparse):
+            self.verbose = False
+            self.debug = False
+        else:
+            self.resume = params['resume']
+            self.verbose = params['verbose']
+            self.debug = params['debug']
+
+        self.sqldb = sqldb
         self.common = balchivist.BALCommon(verbose=self.verbose,
                                            debug=self.debug)
         self.jobs = [
@@ -60,6 +67,32 @@ class BALMDumps(object):
             'dumpruninfo.txt',
             'status.html'
         ]
+
+    def argparse(self, subparser=None):
+        """
+        This function is used for declaring the valid arguments specific to
+        this module and should only be used during the argparse stage.
+
+        - subparser (object): The subparser object.
+        """
+        parser = subparser.add_parser(
+            "dumps",
+            description="Module for archiving the full Wikimedia wiki dumps."
+        )
+        parser.add_argument("-j", "--job", action="store",
+                            choices=["archive", "check", "update"],
+                            help="The job to execute, can be either "
+                                 "\"archive\", \"check\" or \"update\".")
+        parser.add_argument("-w", "--wiki", action="store",
+                            help="The wiki to work on.")
+        parser.add_argument("-d", "--date", action="store",
+                            help="The date of the wiki dump to work on.")
+        parser.add_argument("-p", "--path", action="store",
+                            help="The path to the wiki dump directory.")
+        parser.add_argument("-r", "--resume", action="store_true",
+                            default=False,
+                            help="Resume uploading a wiki dump instead of "
+                            "restarting all over.")
 
     def getDumpProgress(self, subject, date):
         """
@@ -546,17 +579,27 @@ class BALMDumps(object):
                                         " check" % (subject, date))
                 self.sqldb.markFailedCheck(updatedetails)
 
-    def execute(self, params={}):
+    def execute(self, args=None, params={}):
         """
         This function is for the main execution of the module and is directly
         called by runner.py.
 
+        - args (namespace): A namespace of all the arguments from argparse.
         - params (dict): Information about the item to work on, should contain
         "job", "subject", "date" and "path".
 
         Returns True if all required processing is successful, False if an
         error has occurred.
         """
+        if (args is None):
+            pass
+        else:
+            params = {
+                'job': args.job,
+                'path': args.path,
+                'subject': args.wiki,
+                'date': args.date
+            }
         continuous = False
         if (params['job'] is None):
             # Set it to the default job, which is to archive
