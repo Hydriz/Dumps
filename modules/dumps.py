@@ -79,7 +79,7 @@ class BALMDumps(object):
             description="Module for archiving the full Wikimedia wiki dumps."
         )
         parser.add_argument("-j", "--job", action="store",
-                            choices=self.jobs, default="archive"
+                            choices=self.jobs, default="archive",
                             help="The job to execute.")
         parser.add_argument("-w", "--wiki", action="store",
                             help="The wiki to work on.")
