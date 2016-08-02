@@ -77,6 +77,7 @@ class BALRunner(object):
         This function is the main execution function for the archiving scripts.
         """
         IncorrectUsage = balchivist.exception.IncorrectUsage
+        version = balchivist.BALVERSION
         # Main parser for all generic arguments
         parser = argparse.ArgumentParser(
             description="A Python library for archiving datasets to the "
@@ -85,25 +86,36 @@ class BALRunner(object):
                    "https://github.com/Hydriz/Balchivist",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
-        parser.add_argument("-D", "--debug", action="store_true",
-                            default=False,
-                            help="Don't modify anything, but output the "
+
+        # Argument group for general options
+        generalopts = parser.add_argument_group(
+            title="General options",
+            description="Generic options when executing the runner."
+        )
+        generalopts.add_argument("-V", "--version", action="version",
+                                 version="Balchivist Python Library %s" % (version))
+        generalopts.add_argument("-D", "--debug", action="store_true",
+                                 default=False,
+                                 help="Don't modify anything, but output the "
                                  "progress.")
-        parser.add_argument("-v", "--verbose", action="store_true",
-                            default=False,
-                            help="Provide more verbosity in output.")
-        parser.add_argument("-c", "--crontab", action="store_true",
-                            default=False,
-                            help="Crontab mode: Exit when everything is done "
-                                 "instead of sleeping. Useful if you do not "
-                                 "intend to run the script forever.")
-        parser.add_argument("-a", "--auto", action="store_true",
-                            default=False,
-                            help="Autonomous mode: Automatically pick an item "
-                            "that needs to be worked on. Can be used together "
-                            "with --crontab to exit once all items are "
-                            "completed, else the script will sleep for a "
-                            "certain amount of time.")
+        generalopts.add_argument("-t", "--type", action="store", dest="module",
+                                 choices=self.modules,
+                                 help="The type of dataset to work on.")
+        generalopts.add_argument("-v", "--verbose", action="store_true",
+                                 default=False,
+                                 help="Provide more verbosity in output.")
+        generalopts.add_argument("-c", "--crontab", action="store_true",
+                                 default=False,
+                                 help="Crontab mode: Exit when everything is "
+                                 "done instead of sleeping. Useful if you do "
+                                 "not intend to run the script forever.")
+        generalopts.add_argument("-a", "--auto", action="store_true",
+                                 default=False,
+                                 help="Autonomous mode: Automatically pick an "
+                                 "item that needs to be worked on. Can be used "
+                                 "together with --crontab to exit once all "
+                                 "items are completed, else the script will "
+                                 "sleep for a certain amount of time.")
 
         # Declare all the necessary arguments used by each individual modules
         if (self.modules == list()):
@@ -113,18 +125,16 @@ class BALRunner(object):
         else:
             pass
 
-        subparser = parser.add_subparsers(
-            title="Dataset types",
-            description="The type of datasets to work on.",
-            help="Types of datasets available to work on."
-        )
         for module in self.modules:
             classname = "BALM" + module.title()
             ClassModule = getattr(modules, classname)(argparse=True)
-            ClassModule.argparse(subparser=subparser)
+            ClassModule.argparse(parser=parser)
 
         args = parser.parse_args()
         if (args.auto):
+            # Note: All other options are ignored when --auto is given,
+            # perhaps we should decide if we take into account the --type
+            # parameter so that it can run autonomously for a given type.
             self.autonomous(debug=args.debug, verbose=args.verbose,
                             crontab=args.crontab)
         else:
@@ -134,13 +144,10 @@ class BALRunner(object):
             'verbose': args.verbose,
             'debug': args.debug
         }
-        if (args.action in self.modules):
-            classtype = "BALM" + args.action.title()
-        else:
-            msg = self.message.getMessage('error-unknowntype')
-            msg += "\nModule %s is not supported!" % (args.action)
-            raise IncorrectUsage(msg)
-
+        # Note: If options that are not relevant to the current --type is used,
+        # they will be silently ignored. Implement a check at this stage if
+        # this were to become a problem.
+        classtype = "BALM" + args.module.title()
         ClassModule = getattr(modules, classtype)(params=params,
                                                   sqldb=self.sqldb)
         return ClassModule.execute(args=args)

@@ -67,31 +67,28 @@ class BALMDumps(object):
             'status.html'
         ]
 
-    def argparse(self, subparser=None):
+    def argparse(self, parser=None):
         """
         This function is used for declaring the valid arguments specific to
         this module and should only be used during the argparse stage.
 
-        - subparser (object): The subparser object.
+        - parser (object): The parser object.
         """
-        parser = subparser.add_parser(
-            "dumps",
-            description="Module for archiving the full Wikimedia wiki dumps."
+        group = parser.add_argument_group(
+            title="Wikimedia dumps",
+            description="The full database dumps of Wikimedia wikis."
         )
-        parser.add_argument("-j", "--job", action="store",
-                            choices=self.jobs, default="archive",
-                            help="The job to execute.")
-        parser.add_argument("-w", "--wiki", action="store",
-                            help="The wiki to work on.")
-        parser.add_argument("-d", "--date", action="store",
-                            help="The date of the wiki dump to work on.")
-        parser.add_argument("-p", "--path", action="store",
-                            help="The path to the wiki dump directory.")
-        parser.add_argument("-r", "--resume", action="store_true",
-                            default=False,
-                            help="Resume uploading a wiki dump instead of "
-                            "restarting all over.")
-        parser.set_defaults(action="dumps")
+        group.add_argument("--dumps-job", action="store", choices=self.jobs,
+                           default="archive", help="The job to execute.")
+        group.add_argument("--dumps-wiki", action="store",
+                           help="The wiki to work on.")
+        group.add_argument("--dumps-date", action="store",
+                           help="The date of the wiki dump to work on.")
+        group.add_argument("--dumps-path", action="store",
+                           help="The path to the wiki dump directory.")
+        group.add_argument("--dumps-resume", action="store_true", default=False,
+                           help="Resume uploading a wiki dump instead of "
+                           "restarting all over.")
 
     def getDumpProgress(self, subject, date):
         """
