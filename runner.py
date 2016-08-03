@@ -86,14 +86,14 @@ class BALRunner(object):
                    "https://github.com/Hydriz/Balchivist",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
+        parser.add_argument("-V", "--version", action="version",
+                            version="Balchivist Python Library %s" % (version))
 
         # Argument group for general options
         generalopts = parser.add_argument_group(
             title="General options",
             description="Generic options when executing the runner."
         )
-        generalopts.add_argument("-V", "--version", action="version",
-                                 version="Balchivist Python Library %s" % (version))
         generalopts.add_argument("-D", "--debug", action="store_true",
                                  default=False,
                                  help="Don't modify anything, but output the "
