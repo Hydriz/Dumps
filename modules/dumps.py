@@ -53,6 +53,7 @@ class BALMDumps(object):
             self.verbose = params['verbose']
             self.debug = params['debug']
 
+        self.resume = False
         self.sqldb = sqldb
         self.common = balchivist.BALCommon(verbose=self.verbose,
                                            debug=self.debug)
@@ -79,16 +80,17 @@ class BALMDumps(object):
             description="The full database dumps of Wikimedia wikis."
         )
         group.add_argument("--dumps-job", action="store", choices=self.jobs,
-                           default="archive", help="The job to execute.")
-        group.add_argument("--dumps-wiki", action="store",
+                           default="archive", dest="dumpsjob",
+                           help="The job to execute.")
+        group.add_argument("--dumps-wiki", action="store", dest="dumpswiki",
                            help="The wiki to work on.")
-        group.add_argument("--dumps-date", action="store",
+        group.add_argument("--dumps-date", action="store", dest="dumpsdate",
                            help="The date of the wiki dump to work on.")
-        group.add_argument("--dumps-path", action="store",
+        group.add_argument("--dumps-path", action="store", dest="dumpspath",
                            help="The path to the wiki dump directory.")
         group.add_argument("--dumps-resume", action="store_true", default=False,
-                           help="Resume uploading a wiki dump instead of "
-                           "restarting all over.")
+                           dest="dumpsresume", help="Resume uploading a wiki "
+                           "dump instead of restarting all over.")
 
     def getDumpProgress(self, subject, date):
         """
@@ -586,30 +588,39 @@ class BALMDumps(object):
         error has occurred.
         """
         continuous = False
-        if (args is None) or (subject is None and date is None):
+        if (args is None) or (args.dumpswiki is None and args.dumpsdate is None):
             # It is likely that --auto has been declared when args is None
             continuous = True
-        elif (subject is None and date is not None):
-            self.common.giveError("Error: --date was given but not --wiki")
+        elif (args.dumpswiki is None and args.dumpsdate is not None):
+            self.common.giveError("Error: Dump date was given but not the wiki")
             return False
-        elif (subject is not None and date is None):
-            self.common.giveError("Error: --wiki was given but not --date")
+        elif (args.dumpswiki is not None and args.dumpsdate is None):
+            self.common.giveError("Error: Wiki was given but not the dump date")
             return False
-        elif (args.job == "update"):
+        elif (args.dumpsjob == "update"):
             return self.update()
         else:
             pass
 
         if (continuous):
-            while self.getItemsLeft(job=args.job) > 0:
-                itemdetails = self.getRandomItem(job=args.job)
+            if (args is None):
+                # Default to performing the archive job
+                dumpsjob = "archive"
+                dumpspath = None
+            else:
+                dumpsjob = args.dumpsjob
+                dumpspath = args.dumpspath
+
+            while self.getItemsLeft(job=dumpsjob) > 0:
+                itemdetails = self.getRandomItem(job=dumpsjob)
                 subject = itemdetails['subject']
                 date = itemdetails['date']
-                self.dispatch(job=args.job, subject=subject, date=date,
-                              path=args.path)
+                self.dispatch(job=dumpsjob, subject=subject, date=date,
+                              path=dumpspath)
         else:
-            self.dispatch(job=args.job, subject=subject, date=date,
-                          path=args.path)
+            self.resume = args.dumpsresume
+            self.dispatch(job=args.dumpsjob, subject=subject, date=date,
+                          path=args.dumpspath)
 
         return True
 
