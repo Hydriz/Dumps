@@ -589,7 +589,9 @@ class BALMDumps(object):
         error has occurred.
         """
         continuous = False
-        if args is None or (args.dumpswiki is None and args.dumpsdate is None):
+        if (args.dumpsjob == "update"):
+            return self.update()
+        elif args is None or (args.dumpswiki is None and args.dumpsdate is None):
             # It is likely that --auto has been declared when args is None
             continuous = True
         elif (args.dumpswiki is None and args.dumpsdate is not None):
@@ -598,8 +600,6 @@ class BALMDumps(object):
         elif (args.dumpswiki is not None and args.dumpsdate is None):
             self.common.giveError("Error: Wiki was given but not the date!")
             return False
-        elif (args.dumpsjob == "update"):
-            return self.update()
         else:
             pass
 
