@@ -24,14 +24,16 @@ import balchivist
 
 
 class BALMDumps(object):
-    def __init__(self, params={}, sqldb=None):
+    def __init__(self, argparse=False, params={}, sqldb=None):
         """
         This module is for archiving the main database dumps provided by the
         Wikimedia Foundation (available at <https://dumps.wikimedia.org>) to
         the Internet Archive.
 
+        - argparse (boolean): Whether or not the class was called during the
+        argparse stage.
         - params (dict): Information about what is to be done about a given
-        item. For this module, "resume", "verbose" and "debug" are necessary.
+        item. The "verbose" and "debug" parameters are necessary.
         - sqldb (object): A call to the BALSqlDb class with the required
         parameters.
         """
@@ -43,11 +45,16 @@ class BALMDumps(object):
         self.sizehint = "107374182400"
 
         self.config = balchivist.BALConfig('dumps')
-        self.resume = params['resume']
-        self.verbose = params['verbose']
-        self.debug = params['debug']
-        self.sqldb = sqldb
 
+        if (argparse):
+            self.verbose = False
+            self.debug = False
+        else:
+            self.verbose = params['verbose']
+            self.debug = params['debug']
+
+        self.resume = False
+        self.sqldb = sqldb
         self.common = balchivist.BALCommon(verbose=self.verbose,
                                            debug=self.debug)
         self.jobs = [
@@ -60,6 +67,31 @@ class BALMDumps(object):
             'dumpruninfo.txt',
             'status.html'
         ]
+
+    def argparse(self, parser=None):
+        """
+        This function is used for declaring the valid arguments specific to
+        this module and should only be used during the argparse stage.
+
+        - parser (object): The parser object.
+        """
+        group = parser.add_argument_group(
+            title="Wikimedia dumps",
+            description="The full database dumps of Wikimedia wikis."
+        )
+        group.add_argument("--dumps-job", action="store", choices=self.jobs,
+                           default="archive", dest="dumpsjob",
+                           help="The job to execute.")
+        group.add_argument("--dumps-wiki", action="store", dest="dumpswiki",
+                           help="The wiki to work on.")
+        group.add_argument("--dumps-date", action="store", dest="dumpsdate",
+                           help="The date of the wiki dump to work on.")
+        group.add_argument("--dumps-path", action="store", dest="dumpspath",
+                           help="The path to the wiki dump directory.")
+        group.add_argument("--dumps-resume", action="store_true",
+                           default=False, dest="dumpsresume",
+                           help="Resume uploading a wiki dump instead of "
+                           "restarting all over.")
 
     def getDumpProgress(self, subject, date):
         """
@@ -546,57 +578,50 @@ class BALMDumps(object):
                                         " check" % (subject, date))
                 self.sqldb.markFailedCheck(updatedetails)
 
-    def execute(self, params={}):
+    def execute(self, args=None):
         """
         This function is for the main execution of the module and is directly
         called by runner.py.
 
-        - params (dict): Information about the item to work on, should contain
-        "job", "subject", "date" and "path".
+        - args (namespace): A namespace of all the arguments from argparse.
 
         Returns True if all required processing is successful, False if an
         error has occurred.
         """
         continuous = False
-        if (params['job'] is None):
-            # Set it to the default job, which is to archive
-            job = "archive"
-        else:
-            job = params['job']
-
-        path = params['path']
-        subject = params['subject']
-        date = params['date']
-
-        # Process the given arguments and make sure that we get what we need
-        if (job == "update"):
-            return self.update()
-        elif (subject is None and date is not None):
-            self.common.giveError("Error: --date was given but not --subject")
-            return False
-        elif (subject is not None and date is None):
-            self.common.giveError("Error: --subject was given but not --date")
-            return False
-        elif (job not in self.jobs):
-            msg = "Warning: The %s job is not supported by the dumps " % (job)
-            msg += "module. Skipping any additional processing..."
-            self.common.giveDebugMessage(msg)
-            # We return True here because the job may be supported by another
-            # module and we do not want to exit the script prematurely.
-            return True
-        elif (subject is None and date is None):
+        if args is None or (args.dumpswiki is None and args.dumpsdate is None):
+            # It is likely that --auto has been declared when args is None
             continuous = True
+        elif (args.dumpswiki is None and args.dumpsdate is not None):
+            self.common.giveError("Error: Date was given but not the wiki!")
+            return False
+        elif (args.dumpswiki is not None and args.dumpsdate is None):
+            self.common.giveError("Error: Wiki was given but not the date!")
+            return False
+        elif (args.dumpsjob == "update"):
+            return self.update()
         else:
             pass
 
         if (continuous):
-            while self.getItemsLeft(job=job) > 0:
-                itemdetails = self.getRandomItem(job=job)
+            if (args is None):
+                # Default to performing the archive job
+                dumpsjob = "archive"
+                dumpspath = None
+            else:
+                dumpsjob = args.dumpsjob
+                dumpspath = args.dumpspath
+
+            while self.getItemsLeft(job=dumpsjob) > 0:
+                itemdetails = self.getRandomItem(job=dumpsjob)
                 subject = itemdetails['subject']
                 date = itemdetails['date']
-                self.dispatch(job=job, subject=subject, date=date, path=path)
+                self.dispatch(job=dumpsjob, subject=subject, date=date,
+                              path=dumpspath)
         else:
-            self.dispatch(job=job, subject=subject, date=date, path=path)
+            self.resume = args.dumpsresume
+            self.dispatch(job=args.dumpsjob, subject=args.dumpswiki,
+                          date=args.dumpsdate, path=args.dumpspath)
 
         return True
 

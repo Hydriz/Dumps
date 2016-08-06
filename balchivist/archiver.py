@@ -38,7 +38,8 @@ class BALArchiver(object):
         tries = 0
         while tries < self.retries:
             try:
-                self.IAItem = internetarchive.Item(identifier, max_retries=retries)
+                self.IAItem = internetarchive.Item(identifier,
+                                                   max_retries=retries)
                 break
             except:
                 tries += 1
