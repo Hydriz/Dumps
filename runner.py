@@ -38,26 +38,6 @@ class BALRunner(object):
         # The database table hosting the information on dumps
         self.dbtable = "archive"
 
-    def autonomous(self, debug=False, verbose=False, crontab=False):
-        """
-        This function is called when the --auto option is used.
-        """
-        params = {
-            'verbose': verbose,
-            'debug': debug
-        }
-        while True:
-            for module in self.modules:
-                classtype = "BALM" + module.title()
-                ClassModule = getattr(modules, classtype)(params=params,
-                                                          sqldb=self.sqldb)
-                status = ClassModule.execute()
-                if (status):
-                    continue
-                else:
-                    # An error has occurred, exit immediately
-                    break
-
     def execute(self):
         """
         This function is the main execution function for the archiving scripts.
