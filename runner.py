@@ -64,6 +64,7 @@ class BALRunner(object):
         """
         IncorrectUsage = balchivist.exception.IncorrectUsage
         version = balchivist.BALVERSION
+        types = self.modules + ["maintenance"]
         # Main parser for all generic arguments
         parser = argparse.ArgumentParser(
             description="A Python library for archiving datasets to the "
@@ -85,8 +86,10 @@ class BALRunner(object):
                                  help="Don't modify anything, but output the "
                                  "progress.")
         generalopts.add_argument("-t", "--type", action="store", dest="module",
-                                 choices=self.modules,
-                                 help="The type of dataset to work on.")
+                                 choices=types,
+                                 help="The type of dataset to work on. "
+                                 "Use \"maintenance\" to perform maintenance "
+                                 "tasks on the software.")
         generalopts.add_argument("-v", "--verbose", action="store_true",
                                  default=False,
                                  help="Provide more verbosity in output.")
@@ -118,11 +121,16 @@ class BALRunner(object):
             "debug": args.debug
         }
         while True:
-            if (args.module is not None):
+            if (args.module is not None) and (args.module != "maintenance"):
                 classtype = "BALM" + args.module.title()
                 ClassModule = getattr(modules, classtype)(params=params,
                                                           sqldb=self.sqldb)
                 ClassModule.execute(args=args)
+                break
+            elif (args.module == "maintenance"):
+                BALMaintenance = balchivist.BALMaintenance(params=params,
+                                                           sqldb=self.sqldb)
+                BALMaintenance.execute()
                 break
             else:
                 for module in self.modules:

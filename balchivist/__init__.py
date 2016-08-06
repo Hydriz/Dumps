@@ -21,5 +21,6 @@ from archiver import BALArchiver
 from common import BALCommon, IncorrectUsage
 from config import BALConfig
 from converter import BALConverter
+from maintenance import BALMaintenance
 from message import BALMessage
 from sqldb import BALSqlDb
