@@ -88,9 +88,10 @@ class BALMDumps(object):
                            help="The date of the wiki dump to work on.")
         group.add_argument("--dumps-path", action="store", dest="dumpspath",
                            help="The path to the wiki dump directory.")
-        group.add_argument("--dumps-resume", action="store_true", default=False,
-                           dest="dumpsresume", help="Resume uploading a wiki "
-                           "dump instead of restarting all over.")
+        group.add_argument("--dumps-resume", action="store_true",
+                           default=False, dest="dumpsresume",
+                           help="Resume uploading a wiki dump instead of "
+                           "restarting all over.")
 
     def getDumpProgress(self, subject, date):
         """
@@ -588,14 +589,14 @@ class BALMDumps(object):
         error has occurred.
         """
         continuous = False
-        if (args is None) or (args.dumpswiki is None and args.dumpsdate is None):
+        if args is None or (args.dumpswiki is None and args.dumpsdate is None):
             # It is likely that --auto has been declared when args is None
             continuous = True
         elif (args.dumpswiki is None and args.dumpsdate is not None):
-            self.common.giveError("Error: Dump date was given but not the wiki")
+            self.common.giveError("Error: Date was given but not the wiki!")
             return False
         elif (args.dumpswiki is not None and args.dumpsdate is None):
-            self.common.giveError("Error: Wiki was given but not the dump date")
+            self.common.giveError("Error: Wiki was given but not the date!")
             return False
         elif (args.dumpsjob == "update"):
             return self.update()
@@ -619,8 +620,8 @@ class BALMDumps(object):
                               path=dumpspath)
         else:
             self.resume = args.dumpsresume
-            self.dispatch(job=args.dumpsjob, subject=subject, date=date,
-                          path=args.dumpspath)
+            self.dispatch(job=args.dumpsjob, subject=args.dumpswiki,
+                          date=args.dumpsdate, path=args.dumpspath)
 
         return True
 

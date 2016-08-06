@@ -35,7 +35,6 @@ class BALRunner(object):
                                          default=config.get('defaults_file'))
         self.modules = json.loads(config.get('modules'))
         self.message = balchivist.BALMessage()
-        self.common = balchivist.BALCommon()
         # The database table hosting the information on dumps
         self.dbtable = "archive"
 
@@ -112,6 +111,7 @@ class BALRunner(object):
 
         # Let's parse the arguments given by the user now
         args = parser.parse_args()
+        common = balchivist.BALCommon(verbose=args.verbose, debug=args.debug)
 
         params = {
             "verbose": args.verbose,
@@ -123,6 +123,7 @@ class BALRunner(object):
                 ClassModule = getattr(modules, classtype)(params=params,
                                                           sqldb=self.sqldb)
                 ClassModule.execute(args=args)
+                break
             else:
                 for module in self.modules:
                     classtype = "BALM" + module.title()
@@ -137,7 +138,7 @@ class BALRunner(object):
 
             # Determine if we should exit the script now
             if (args.debug):
-                self.common.giveMessage("Nothing to be done!")
+                common.giveMessage("Nothing to be done!")
                 break
             elif (args.crontab):
                 # Crontab mode is active, exit when everything is done
@@ -145,7 +146,7 @@ class BALRunner(object):
             else:
                 # Allow the script to sleep for 6 hours
                 timenow = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-                self.common.giveMessage("Sleeping for 6 hours, %s" % (timenow))
+                common.giveMessage("Sleeping for 6 hours, %s" % (timenow))
                 time.sleep(60*60*6)
 
 
