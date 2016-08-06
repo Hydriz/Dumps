@@ -17,7 +17,7 @@
 import subprocess
 import time
 
-from . import BALVERSION, BALConfig
+from . import BALConfig
 from exception import IncorrectUsage
 import message
 
@@ -48,11 +48,11 @@ class BALMaintenance(object):
         parameter in the future to skip this sleep time if necessary.
         """
         sleep = 5
-        print "Maintenance mode entered!"
-        print "Use Ctrl+C to exit in the next %d seconds if this " % (sleep)
-        "was not intended."
+        print ("Maintenance mode entered!")
+        print ("Use Ctrl+C to exit in the next %d seconds if this was not "
+               "intended." % (sleep))
         time.sleep(sleep)
-        print "Starting maintenance..."
+        print ("Starting maintenance...")
         time.sleep(1)
         self.starttime = time.time()
 
@@ -61,7 +61,7 @@ class BALMaintenance(object):
         This function is for providing the ending
         """
         timetaken = time.time() - self.starttime
-        print "Maintenance done! Total time taken: %s seconds" % (timetaken)
+        print ("Maintenance done! Total time taken: %s seconds" % (timetaken))
 
     def checkVersion(self):
         """
@@ -73,14 +73,15 @@ class BALMaintenance(object):
         remoteurl = subprocess.check_output(remoteurlcmd).strip()
         remotecmd = ['git', 'ls-remote', remoteurl, 'HEAD']
         remotehash = subprocess.check_output(remotecmd).strip().split('\t')[0]
-        print "Checking if Balchivist is up-to-date..."
-        print "Current version: %s" % (githash)
-        print "Latest version: %s" % (remotehash)
+        print ("Checking if Balchivist is up-to-date...")
+        print ("Current version: %s" % (githash))
+        print ("Latest version: %s" % (remotehash))
         if (githash == remotehash):
-            print "Great, Balchivist is indeed up-to-date."
+            print ("Great, Balchivist is indeed up-to-date.")
         else:
-            print "ERROR: A new version is available for download. Please run "
-            "\"git pull\" to update the library to the latest version!"
+            print ("ERROR: A new version is available for download. Please "
+                   "run \"git pull\" to update the library to the latest "
+                   "version!")
 
     def execute(self):
         """
