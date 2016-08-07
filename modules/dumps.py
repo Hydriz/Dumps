@@ -17,6 +17,7 @@
 import datetime
 import os
 import re
+import socket
 import time
 import urllib
 
@@ -57,6 +58,7 @@ class BALMDumps(object):
         self.resume = False
         self.dbtable = "dumps"
         self.sqldb = sqldb
+        self.hostname = socket.gethostname()
         self.common = balchivist.BALCommon(verbose=self.verbose,
                                            debug=self.debug)
         self.jobs = [
@@ -293,15 +295,13 @@ class BALMDumps(object):
         Returns: Dict with the information about the item to work on.
         """
         if (job is None or job == "archive"):
-            itemdetails = self.getRandomItemSql(archived=False,
-                                                debug=self.debug)
+            itemdetails = self.getRandomItemSql(archived=False)
             output = {
                 'wiki': itemdetails['wiki'],
                 'date': itemdetails['date']
             }
         elif (job == "check"):
-            itemdetails = self.getRandomItemSql(archived=True,
-                                                debug=self.debug)
+            itemdetails = self.getRandomItemSql(archived=True)
             output = {
                 'wiki': itemdetails['wiki'],
                 'date': itemdetails['date']
@@ -347,13 +347,12 @@ class BALMDumps(object):
         return self.sqldb.count(dbtable=self.dbtable,
                                 conds=' AND '.join(conds))
 
-    def getRandomItemSql(self, archived=False, debug=False):
+    def getRandomItemSql(self, archived=False):
         """
         This function is used to get a random item to work on.
 
         - archived (boolean): Whether or not to obtain a random item that is
         already archived.
-        - debug (boolean): Whether or not to run this function in debug mode.
 
         Returns: Dict with the parameters to the archiving scripts.
         """
@@ -389,12 +388,6 @@ class BALMDumps(object):
                     'wiki': result[0],
                     'date': result[1].strftime("%Y%m%d")
                 }
-
-        # Claim the item from the database server if not in debug mode
-        if debug:
-            pass
-        else:
-            self.claimItem(params=output)
 
         return output
 
@@ -799,6 +792,13 @@ class BALMDumps(object):
             'wiki': wiki,
             'date': date
         }
+
+        # Claim the item from the database server if not in debug mode
+        if self.debug:
+            pass
+        else:
+            self.claimItem(params=updatedetails)
+
         msg = "Running %s on the main Wikimedia database " % (job)
         msg += "dump of %s on %s" % (wiki, date)
         self.common.giveMessage(msg)
