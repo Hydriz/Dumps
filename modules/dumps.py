@@ -841,7 +841,8 @@ class BALMDumps(object):
         continuous = False
         if (args.dumpsjob == "update"):
             return self.update()
-        elif args is None or (args.dumpswiki is None and args.dumpsdate is None):
+        elif args is None or (args.dumpswiki is None and
+                              args.dumpsdate is None):
             # It is likely that --auto has been declared when args is None
             continuous = True
         elif (args.dumpswiki is None and args.dumpsdate is not None):
