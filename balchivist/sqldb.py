@@ -13,22 +13,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-#
-# TODO:
-# - is_claimed: Column to indicate whether the item has been claimed for
-# archiving or checking
-
-import socket
 
 import MySQLdb
 
-from converter import BALConverter
 from exception import IncorrectUsage
 import message
 
 
 class BALSqlDb(object):
-    def __init__(self, database='balchivist', host='localhost',
+    def __init__(self, database="balchivist", host="localhost",
                  default='~/.my.cnf'):
         """
         This module is used to provide an interface for interacting with an
@@ -38,12 +31,9 @@ class BALSqlDb(object):
         - host (string): The MySQL server hosting the database
         - default (string): The path to the file with the MySQL credentials.
         """
-        self.default = default
-        self.host = host
         self.database = database
-        self.dbtable = 'archive'
-        self.hostname = socket.gethostname()
-        self.conv = BALConverter()
+        self.host = host
+        self.default = default
 
     def execute(self, query, params=()):
         """
@@ -70,67 +60,78 @@ class BALSqlDb(object):
         else:
             return result
 
-    def count(self, conds='', options='', params=()):
+    def count(self, dbtable=None, conds='', options='', params=()):
         """
         This function is used to get a count of the number of rows in the
         database depending on the given conditions.
 
+        - dbtable (string): The database table to query from.
         - conds (string): Conditions (WHERE clauses) to add.
         - options (string): Query options.
         - params (tuple): Parameters to substitute in the query.
 
-        Returns: Int with the number of rows for a given query.
+        Returns: Int with the number of rows for a given query, None if the
+        dbtable parameter is missing (which is required).
         """
-        output = 0
-        query = [
-            'SELECT', 'COUNT(*)',
-            'FROM', self.dbtable
-        ]
-        if (conds != ''):
-            extra = ['WHERE', conds, options]
+        if (dbtable is None):
+            return None
         else:
-            extra = [options]
-        query.extend(extra)
-        execute = ' '.join(query) + ';'
-        results = self.execute(execute, params)
-        if results is None:
             output = 0
-        else:
-            for result in results:
-                output = result[0]
-        return output
+            query = [
+                'SELECT', 'COUNT(*)',
+                'FROM', dbtable
+            ]
+            if (conds != ''):
+                extra = ['WHERE', conds, options]
+            else:
+                extra = [options]
+            query.extend(extra)
+            execute = ' '.join(query) + ';'
+            results = self.execute(execute, params)
+            if results is None:
+                output = 0
+            else:
+                for result in results:
+                    output = result[0]
+            return output
 
-    def insert(self, values={}, params=()):
+    def insert(self, dbtable=None, values={}, params=()):
         """
         This function is used for inserting new rows into the database.
 
+        - dbtable (string): The database table to query from.
         - values (dict): A dictionary with key and value pairs to insert.
         - params (tuple): Parameters to substitute in the query.
 
         Returns: True if insert is successful, False if an error occurred.
         """
-        keys = []
-        vals = []
-        for key, val in values.iteritems():
-            keys.append(key)
-            vals.append(val)
-
-        query = [
-            'INSERT INTO', self.dbtable,
-            '(' + ', '.join(keys) + ')',
-            'VALUES', '(' + ', '.join(vals) + ')'
-        ]
-        execute = ' '.join(query) + ';'
-        try:
-            self.execute(execute, params)
-            return True
-        except:
+        if (dbtable is None):
             return False
+        else:
+            keys = []
+            vals = []
+            for key, val in values.iteritems():
+                keys.append(key)
+                vals.append(val)
 
-    def select(self, columns=[], conds='', options='', params=()):
+            query = [
+                'INSERT INTO', dbtable,
+                '(' + ', '.join(keys) + ')',
+                'VALUES', '(' + ', '.join(vals) + ')'
+            ]
+            execute = ' '.join(query) + ';'
+            try:
+                self.execute(execute, params)
+                return True
+            except:
+                return False
+
+    def select(self, dbtable=None, columns=[], conds='', options='',
+               params=()):
         """
         This function is used for obtaining information from the database.
 
+        - dbtable (string): The database table to query from.
         - columns (dict): The column(s) to retrieve from the database.
         - conds (string): Conditions (WHERE clauses) to add.
         - options (string): Query options.
@@ -141,351 +142,58 @@ class BALSqlDb(object):
 
         Returns: Tuple with the SQL query results, None if empty set.
         """
-        query = [
-            'SELECT', ', '.join(columns),
-            'FROM', self.dbtable
-        ]
-        if (conds != ''):
-            extra = ['WHERE', conds, options]
+        if (dbtable is None):
+            return None
         else:
-            extra = [options]
-        query.extend(extra)
-        execute = ' '.join(query) + ';'
-        return self.execute(execute, params)
+            query = [
+                'SELECT', ', '.join(columns),
+                'FROM', dbtable
+            ]
+            if (conds != ''):
+                extra = ['WHERE', conds, options]
+            else:
+                extra = [options]
+            query.extend(extra)
+            execute = ' '.join(query) + ';'
+            try:
+                return self.execute(execute, params)
+            except:
+                return None
 
-    def update(self, values={}, conds='', params=()):
+    def update(self, dbtable=None, values={}, conds='', params=()):
         """
         This function is used for updating information in the database. This
         is different from INSERT (see self.insert instead).
 
+        - dbtable (string): The database table to query from.
         - values (dict): A dictionary of columns and values to update.
         - conds (string): Conditions (WHERE clauses) to add.
         - params (tuple): Parameters to substitute in the query.
 
         Returns: True if update is successful, False if an error occurred.
         """
-        vals = []
-        for key, val in values.iteritems():
-            vals.append('%s=%s' % (key, val))
-        query = [
-            'UPDATE', self.dbtable,
-            'SET', ', '.join(vals)
-        ]
-        if (conds != ''):
-            extra = ['WHERE', conds]
-        else:
-            extra = []
-        query.extend(extra)
-        execute = ' '.join(query) + ';'
-        try:
-            self.execute(execute, params)
-            return True
-        except:
+        if (dbtable is None):
             return False
-
-    def getAllDumps(self, wikidb, progress="all", can_archive="all",
-                    is_archived="all", is_checked="all"):
-        """
-        This function is used to get all dumps of a specific wiki (up to 30).
-
-        - progress (string): Dumps with this progress will be returned, "all"
-        for all progress statuses.
-        - can_archive (string): Dumps with this can_archive status will be
-        returned, "all" for all can_archive statuses.
-        - is_archived (string): Dumps with this is_archived status will be
-        returned, "all" for all is_archived statuses.
-        - is_checked (string): Dumps with this is_checked status will be
-        returned, "all" for all is_checked statuses.
-
-        Returns: Dict with all dumps of a wiki.
-        """
-        dumps = []
-        conds = ['subject="%s"' % wikidb]
-
-        if progress == "all":
-            pass
         else:
-            conds.append('progress="%s"' % (progress))
+            vals = []
+            for key, val in values.iteritems():
+                vals.append('%s=%s' % (key, val))
 
-        if can_archive == "all":
-            pass
-        else:
-            conds.append('can_archive="%s"' % (can_archive))
-
-        if is_archived == "all":
-            pass
-        else:
-            conds.append('is_archived="%s"' % (is_archived))
-
-        if is_checked == "all":
-            pass
-        else:
-            conds.append('is_checked="%s"' % (is_checked))
-
-        options = 'ORDER BY dumpdate DESC LIMIT 30'
-        results = self.select(['dumpdate'], ' AND '.join(conds), options)
-        if results is not None:
-            for result in results:
-                dumps.append(result[0].strftime("%Y%m%d"))
-        return dumps
-
-    def getConds(self, params):
-        """
-        This function is used for getting the conditions necessary for the
-        SQL query to work.
-
-        - params (dict): Information about the item with the keys "type",
-        "subject" and "date".
-
-        Returns: String with the SQL-like conditions.
-        """
-        arcdate = self.conv.getDateFromWiki(params['date'],
-                                            archivedate=True)
-        conds = [
-            'type="%s"' % (params['type']),
-            'subject="%s"' % (params['subject']),
-            'dumpdate="%s"' % (arcdate)
-        ]
-        return ' AND '.join(conds)
-
-    def claimItem(self, params):
-        """
-        This function is used to claim an item from the server.
-
-        - params (dict): Information about the item with the keys "type",
-        "subject" and "date".
-
-        Returns: True if update is successful, False if an error occurred.
-        """
-        values = {
-            'claimed_by': '"%s"' % (self.hostname)
-        }
-        conds = self.getConds(params=params)
-        results = self.update(values=values, conds=conds)
-        if results:
-            return True
-        else:
-            return False
-
-    def updateCanArchive(self, params):
-        """
-        This function is used to update the status of whether a dump can be
-        archived.
-
-        - params (dict): Information about the item with the keys "type",
-        "subject" and "date".
-
-        Returns: True if update is successful, False if an error occurred.
-        """
-        values = {
-            'can_archive': '"%s"' % (params['can_archive'])
-        }
-        conds = self.getConds(params=params)
-        results = self.update(values=values, conds=conds)
-        if results:
-            return True
-        else:
-            return False
-
-    def markArchived(self, params):
-        """
-        This function is used to mark an item as archived after doing so.
-
-        - params (dict): Information about the item with the keys "type",
-        "subject" and "date".
-
-        Returns: True if update is successful, False if an error occurred.
-        """
-        values = {
-            'is_archived': '"1"',
-            'claimed_by': 'NULL'
-        }
-        conds = self.getConds(params=params)
-        results = self.update(values=values, conds=conds)
-        if results:
-            return True
-        else:
-            return False
-
-    def markChecked(self, params):
-        """
-        This function is used to mark an item as checked after doing so.
-
-        - params (dict): Information about the item with the keys "type",
-        "subject" and "date".
-
-        Returns: True if update is successful, False if an error occurred.
-        """
-        values = {
-            'is_checked': '"1"',
-            'claimed_by': 'NULL'
-        }
-        conds = self.getConds(params=params)
-        results = self.update(values=values, conds=conds)
-        if results:
-            return True
-        else:
-            return False
-
-    def markFailedArchive(self, params):
-        """
-        This function is used to mark an item as failed when archiving it.
-
-        - params (dict): Information about the item with the keys "type",
-        "subject" and "date".
-
-        Returns: True if update is successful, False if an error occurred.
-        """
-        values = {
-            'is_archived': '"2"',
-            'claimed_by': 'NULL'
-        }
-        conds = self.getConds(params=params)
-        results = self.update(values=values, conds=conds)
-        if results:
-            return True
-        else:
-            return False
-
-    def markFailedCheck(self, params):
-        """
-        This function is used to mark an item as failed when checking it.
-
-        - params (dict): Information about the item with the keys "type",
-        "subject" and "date".
-
-        Returns: True if update is successful, False if an error occurred.
-        """
-        values = {
-            'is_checked': '"2"',
-            'claimed_by': 'NULL'
-        }
-        conds = self.getConds(params=params)
-        results = self.update(values=values, conds=conds)
-        if results:
-            return True
-        else:
-            return False
-
-    def updateProgress(self, params):
-        """
-        This function is used to update the progress of a dump.
-
-        - params (dict): Information about the item with the keys "type",
-        "subject", "date" and "progress".
-
-        Returns: True if update is successful, False if an error occurred.
-        """
-        values = {
-            'progress': '"%s"' % (params['progress'])
-        }
-        conds = self.getConds(params=params)
-        results = self.update(values=values, conds=conds)
-        if results:
-            return True
-        else:
-            return False
-
-    def addNewItem(self, params):
-        """
-        This function is used to insert a new item into the database.
-
-        - params (dict): Information about the item with the keys "type",
-        "subject", "date" and "progress".
-
-        Returns: True if update is successful, False if an error occurred.
-        """
-        arcdate = self.conv.getDateFromWiki(params['date'],
-                                            archivedate=True)
-        values = {
-            'type': '"%s"' % (params['type']),
-            'subject': '"%s"' % (params['subject']),
-            'dumpdate': '"%s"' % (arcdate),
-            'progress': '"%s"' % (params['progress']),
-            'claimed_by': 'NULL',
-            'can_archive': '"0"',
-            'is_archived': '"0"',
-            'is_checked': '"0"',
-            'comments': 'NULL'
-        }
-        results = self.insert(values=values)
-        if results:
-            return True
-        else:
-            return False
-
-    def getItemsLeft(self, params={}):
-        """
-        This function is used to get the number of items left to work with.
-
-        - params (dict): The conditions to put in the WHERE clause.
-
-        Returns: Int with number of items left to work with.
-        """
-        conds = ['claimed_by IS NULL']
-        for key, val in params.iteritems():
-            conds.append('%s="%s"' % (key, val))
-        return self.count(' AND '.join(conds))
-
-    def getRandomItem(self, dumptype=None, archived=False, debug=False):
-        """
-        This function is used to get a random item to work on.
-
-        - dumptype (string): The specific dump type to work on.
-        - archived (boolean): Whether or not to obtain a random item that is
-        already archived.
-        - debug (boolean): Whether or not to run this function in debug mode.
-
-        Returns: Dict with the parameters to the archiving scripts.
-        """
-        output = {}
-        columns = ['type', 'subject', 'dumpdate']
-        options = 'ORDER BY RAND() LIMIT 1'
-        conds = ['claimed_by IS NULL']
-
-        if (archived):
-            extra = [
-                'is_archived="1"',
-                'is_checked="0"'
+            query = [
+                'UPDATE', dbtable,
+                'SET', ', '.join(vals)
             ]
-        else:
-            extra = [
-                'progress="done"',
-                'is_archived="0"',
-                'can_archive="1"'
-            ]
-        conds.extend(extra)
-
-        if dumptype is None:
-            pass
-        else:
-            # Replacement is to avoid SQL injection attacks
-            conds.append('type="%s"' % (dumptype.replace(" ", "_")))
-
-        results = self.select(columns, ' AND '.join(conds), options)
-        if results is None:
-            # This should not be triggered at all. Use self.getItemsLeft()
-            # to verify first before running this function.
-            output = {
-                'type': dumptype,
-                'subject': None,
-                'date': None
-            }
-        else:
-            for result in results:
-                output = {
-                    'type': result[0],
-                    'subject': result[1],
-                    'date': result[2].strftime("%Y%m%d")
-                }
-
-        # Claim the item from the database server if not in debug mode
-        if debug:
-            pass
-        else:
-            self.claimItem(params=output)
-
-        return output
+            if (conds != ''):
+                extra = ['WHERE', conds]
+            else:
+                extra = []
+            query.extend(extra)
+            execute = ' '.join(query) + ';'
+            try:
+                self.execute(execute, params)
+                return True
+            except:
+                return False
 
 if __name__ == "__main__":
     BALMessage = message.BALMessage()
