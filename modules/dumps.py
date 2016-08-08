@@ -374,7 +374,7 @@ class BALMDumps(object):
             ]
         conds.extend(extra)
 
-        results = self.select(columns, ' AND '.join(conds), options)
+        results = self.sqldb.select(columns, ' AND '.join(conds), options)
         if results is None:
             # This should not be triggered at all. Use self.getItemsLeft()
             # to verify first before running this function.
@@ -559,7 +559,7 @@ class BALMDumps(object):
                 conds.append("%s=\"%s\"" % (key, val))
 
         options = 'ORDER BY dumpdate DESC LIMIT 30'
-        results = self.select(['dumpdate'], ' AND '.join(conds), options)
+        results = self.sqldb.select(['dumpdate'], ' AND '.join(conds), options)
         if results is not None:
             for result in results:
                 dumps.append(result[0].strftime("%Y%m%d"))
