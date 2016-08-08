@@ -17,6 +17,7 @@
 import datetime
 import os
 import re
+import socket
 import time
 import urllib
 
@@ -45,6 +46,7 @@ class BALMDumps(object):
         self.sizehint = "107374182400"
 
         self.config = balchivist.BALConfig('dumps')
+        self.conv = balchivist.BALConverter()
 
         if (argparse):
             self.verbose = False
@@ -54,7 +56,9 @@ class BALMDumps(object):
             self.debug = params['debug']
 
         self.resume = False
+        self.dbtable = "dumps"
         self.sqldb = sqldb
+        self.hostname = socket.gethostname()
         self.common = balchivist.BALCommon(verbose=self.verbose,
                                            debug=self.debug)
         self.jobs = [
@@ -93,11 +97,11 @@ class BALMDumps(object):
                            help="Resume uploading a wiki dump instead of "
                            "restarting all over.")
 
-    def getDumpProgress(self, subject, date):
+    def getDumpProgress(self, wiki, date):
         """
         This function is used to get the progress of a dump.
 
-        - subject (string): The wiki database to check.
+        - wiki (string): The wiki database to check.
         - date (string): The date of the dump in %Y%m%d format.
 
         Returns: String of either "progress", "done", "error" or "unknown"
@@ -112,7 +116,7 @@ class BALMDumps(object):
         progress = 0
         done = 0
         statusurl = "%s/%s/%s/dumpruninfo.txt" % (self.config.get('dumps'),
-                                                  subject, date)
+                                                  wiki, date)
         f = urllib.urlopen(statusurl)
         raw = f.read()
         f.close()
@@ -180,40 +184,40 @@ class BALMDumps(object):
         databases = open(dblist, 'r').read().splitlines()
         return sorted(databases)
 
-    def getDumpFiles(self, subject, date):
+    def getDumpFiles(self, wiki, date):
         """
         This function is used to get a list of dump files from the dumps server
         by using regular expressions.
 
-        - subject (string): The wiki database to get a list of files for.
+        - wiki (string): The wiki database to get a list of files for.
         - date (string): The date of the dump in %Y%m%d format.
 
         Returns: List of files.
         """
         dumpfiles = []
-        url = "%s/%s/%s/index.html" % (self.config.get('dumps'), subject, date)
+        url = "%s/%s/%s/index.html" % (self.config.get('dumps'), wiki, date)
         f = urllib.urlopen(url)
         raw = f.read()
         f.close()
 
         regex = r'<li class=\'file\'><a href="/%s/%s/(?P<dumpfile>[^>]+)">' % (
-                subject, date)
+                wiki, date)
         m = re.compile(regex).finditer(raw)
         for i in m:
             dumpfiles.append(i.group('dumpfile'))
         return sorted(dumpfiles + self.additional)
 
-    def getAllDumps(self, subject):
+    def getAllDumps(self, wiki):
         """
         This function is used to get all dumps in a directory from the dumps
         server by using regular expressions.
 
-        - subject (string): The wiki database to get a list of files for.
+        - wiki (string): The wiki database to get a list of files for.
 
         Returns: List of all dumps.
         """
         dumps = []
-        url = "%s/%s" % (self.config.get('dumps'), subject)
+        url = "%s/%s" % (self.config.get('dumps'), wiki)
         f = urllib.urlopen(url)
         raw = f.read()
         f.close()
@@ -228,12 +232,12 @@ class BALMDumps(object):
             dumps.append(i.group('dump'))
         return sorted(dumps)
 
-    def checkDumpDir(self, path, subject, date):
+    def checkDumpDir(self, path, wiki, date):
         """
         This function is used to check if the given dump directory is complete.
 
         - path (string): The path to the dump directory.
-        - subject (string): The wiki database to check.
+        - wiki (string): The wiki database to check.
         - date (string): The date of the dump in %Y%m%d format.
 
         Returns: True if dump directory is complete, False if otherwise.
@@ -246,7 +250,7 @@ class BALMDumps(object):
             self.common.giveDebugMessage("The dump file directory does not "
                                          "exist!")
             return False
-        allfiles = self.getDumpFiles(subject, date)
+        allfiles = self.getDumpFiles(wiki, date)
         for dumpfile in allfiles:
             if (dumpfile in files):
                 continue
@@ -275,11 +279,11 @@ class BALMDumps(object):
         if (job is None or job == "archive"):
             conds['is_archived'] = "0"
             conds['can_archive'] = "1"
-            return self.sqldb.getItemsLeft(params=conds)
+            return self.getNumberOfItems(params=conds)
         elif (job == "check"):
             conds['is_archived'] = "1"
             conds['is_checked'] = "0"
-            return self.sqldb.getItemsLeft(params=conds)
+            return self.getNumberOfItems(params=conds)
         else:
             return 0
 
@@ -291,35 +295,284 @@ class BALMDumps(object):
         Returns: Dict with the information about the item to work on.
         """
         if (job is None or job == "archive"):
-            itemdetails = self.sqldb.getRandomItem(dumptype="main",
-                                                   archived=False,
-                                                   debug=self.debug)
+            itemdetails = self.getRandomItemSql(archived=False)
             output = {
-                'subject': itemdetails['subject'],
+                'wiki': itemdetails['wiki'],
                 'date': itemdetails['date']
             }
         elif (job == "check"):
-            itemdetails = self.sqldb.getRandomItem(dumptype="main",
-                                                   archived=True,
-                                                   debug=self.debug)
+            itemdetails = self.getRandomItemSql(archived=True)
             output = {
-                'subject': itemdetails['subject'],
+                'wiki': itemdetails['wiki'],
                 'date': itemdetails['date']
             }
         elif (job == "update"):
             output = {
-                'subject': None,
+                'wiki': None,
                 'date': None
             }
         else:
             output = {}
         return output
 
-    def archive(self, subject, date, path=None, verbose=False, debug=False):
+    def getSqlConds(self, params):
+        """
+        This function is used for getting the conditions necessary for the
+        SQL query to work.
+
+        - params (dict): Information about the item with the keys "wiki"
+        and "date".
+
+        Returns: String with the SQL-like conditions.
+        """
+        arcdate = self.conv.getDateFromWiki(params['date'],
+                                            archivedate=True)
+        conds = [
+            'wiki="%s"' % (params['wiki']),
+            'dumpdate="%s"' % (arcdate)
+        ]
+        return ' AND '.join(conds)
+
+    def getNumberOfItems(self, params={}):
+        """
+        This function is used to get the number of items left to work with.
+
+        - params (dict): The conditions to put in the WHERE clause.
+
+        Returns: Int with number of items left to work with.
+        """
+        conds = ['claimed_by IS NULL']
+        for key, val in params.iteritems():
+            conds.append('%s="%s"' % (key, val))
+        return self.sqldb.count(dbtable=self.dbtable,
+                                conds=' AND '.join(conds))
+
+    def getRandomItemSql(self, archived=False):
+        """
+        This function is used to get a random item to work on.
+
+        - archived (boolean): Whether or not to obtain a random item that is
+        already archived.
+
+        Returns: Dict with the parameters to the archiving scripts.
+        """
+        output = {}
+        columns = ['wiki', 'dumpdate']
+        options = 'ORDER BY RAND() LIMIT 1'
+        conds = ['claimed_by IS NULL']
+
+        if (archived):
+            extra = [
+                'is_archived="1"',
+                'is_checked="0"'
+            ]
+        else:
+            extra = [
+                'progress="done"',
+                'is_archived="0"',
+                'can_archive="1"'
+            ]
+        conds.extend(extra)
+
+        results = self.sqldb.select(dbtable=self.dbtable, columns=columns,
+                                    conds=' AND '.join(conds), options=options)
+        if results is None:
+            # This should not be triggered at all. Use self.getItemsLeft()
+            # to verify first before running this function.
+            output = {
+                'wiki': None,
+                'date': None
+            }
+        else:
+            for result in results:
+                output = {
+                    'wiki': result[0],
+                    'date': result[1].strftime("%Y%m%d")
+                }
+
+        return output
+
+    def updateCanArchive(self, params):
+        """
+        This function is used to update the status of whether a dump can be
+        archived.
+
+        - params (dict): Information about the item with the keys "wiki",
+        "date" and "can_archive".
+
+        Returns: True if update is successful, False if an error occurred.
+        """
+        vals = {
+            'can_archive': '"%s"' % (params['can_archive'])
+        }
+        return self.sqldb.update(dbtable=self.dbtable, values=vals,
+                                 conds=self.getSqlConds(params=params))
+
+    def markArchived(self, params):
+        """
+        This function is used to mark an item as archived after doing so.
+
+        - params (dict): Information about the item with the keys "wiki"
+        and "date".
+
+        Returns: True if update is successful, False if an error occurred.
+        """
+        vals = {
+            'is_archived': '"1"',
+            'claimed_by': 'NULL'
+        }
+        return self.sqldb.update(dbtable=self.dbtable, values=vals,
+                                 conds=self.getSqlConds(params=params))
+
+    def markChecked(self, params):
+        """
+        This function is used to mark an item as checked after doing so.
+
+        - params (dict): Information about the item with the keys "wiki"
+        and "date".
+
+        Returns: True if update is successful, False if an error occurred.
+        """
+        vals = {
+            'is_checked': '"1"',
+            'claimed_by': 'NULL'
+        }
+        return self.sqldb.update(dbtable=self.dbtable, values=vals,
+                                 conds=self.getSqlConds(params=params))
+
+    def markFailedArchive(self, params):
+        """
+        This function is used to mark an item as failed when archiving it.
+
+        - params (dict): Information about the item with the keys "wiki"
+        and "date".
+
+        Returns: True if update is successful, False if an error occurred.
+        """
+        vals = {
+            'is_archived': '"2"',
+            'claimed_by': 'NULL'
+        }
+        return self.sqldb.update(dbtable=self.dbtable, values=vals,
+                                 conds=self.getSqlConds(params=params))
+
+    def markFailedCheck(self, params):
+        """
+        This function is used to mark an item as failed when checking it.
+
+        - params (dict): Information about the item with the keys "wiki"
+        and "date".
+
+        Returns: True if update is successful, False if an error occurred.
+        """
+        vals = {
+            'is_checked': '"2"',
+            'claimed_by': 'NULL'
+        }
+        return self.sqldb.update(dbtable=self.dbtable, values=vals,
+                                 conds=self.getSqlConds(params=params))
+
+    def claimItem(self, params):
+        """
+        This function is used to claim an item from the server.
+
+        - params (dict): Information about the item with the keys "wiki"
+        and "date".
+
+        Returns: True if update is successful, False if an error occurred.
+        """
+        vals = {
+            'claimed_by': '"%s"' % (self.hostname)
+        }
+        return self.sqldb.update(dbtable=self.dbtable, values=vals,
+                                 conds=self.getSqlConds(params=params))
+
+    def updateProgress(self, params):
+        """
+        This function is used to update the progress of a dump.
+
+        - params (dict): Information about the item with the keys "wiki",
+        "date" and "progress".
+
+        Returns: True if update is successful, False if an error occurred.
+        """
+        vals = {
+            'progress': '"%s"' % (params['progress'])
+        }
+        return self.sqldb.update(dbtable=self.dbtable, values=vals,
+                                 conds=self.getSqlConds(params=params))
+
+    def addNewItem(self, params):
+        """
+        This function is used to insert a new item into the database.
+
+        - params (dict): Information about the item with the keys "wiki",
+        "date" and "progress".
+
+        Returns: True if update is successful, False if an error occurred.
+        """
+        arcdate = self.conv.getDateFromWiki(params['date'],
+                                            archivedate=True)
+        values = {
+            'wiki': '"%s"' % (params['wiki']),
+            'dumpdate': '"%s"' % (arcdate),
+            'progress': '"%s"' % (params['progress']),
+            'claimed_by': 'NULL',
+            'can_archive': '"0"',
+            'is_archived': '"0"',
+            'is_checked': '"0"',
+            'comments': 'NULL'
+        }
+        return self.sqldb.insert(dbtable=self.dbtable, values=values)
+
+    def getStoredDumps(self, wikidb=None, progress="all", can_archive="all",
+                       is_archived="all", is_checked="all"):
+        """
+        This function is used to get all dumps of a specific wiki (up to 30).
+
+        - wikidb (string): The database name of the wiki to get a list of
+        dumps for.
+        - progress (string): Dumps with this progress will be returned, "all"
+        for all progress statuses.
+        - can_archive (string): Dumps with this can_archive status will be
+        returned, "all" for all can_archive statuses.
+        - is_archived (string): Dumps with this is_archived status will be
+        returned, "all" for all is_archived statuses.
+        - is_checked (string): Dumps with this is_checked status will be
+        returned, "all" for all is_checked statuses.
+
+        Returns: Dict with all dumps of a wiki.
+        """
+        arguments = locals()
+        dumps = []
+        if (wikidb is not None):
+            conds = ['wiki="%s"' % wikidb]
+        else:
+            return dumps
+
+        del arguments['self']
+        del arguments['wikidb']
+
+        for key, val in arguments.items():
+            if (val == "all"):
+                continue
+            else:
+                conds.append('%s="%s"' % (key, val))
+
+        options = 'ORDER BY dumpdate DESC LIMIT 30'
+        results = self.sqldb.select(dbtable=self.dbtable,
+                                    columns=['dumpdate'],
+                                    conds=' AND '.join(conds), options=options)
+        if results is not None:
+            for result in results:
+                dumps.append(result[0].strftime("%Y%m%d"))
+        return dumps
+
+    def archive(self, wiki, date, path=None, verbose=False, debug=False):
         """
         This function is for doing the actual archiving process.
 
-        - subject (string): The wiki database to archive.
+        - wiki (string): The wiki database to archive.
         - date (string): The date of the dump in %Y%m%d format.
         - path (string): The path to the dump directory.
         - verbose (boolean): Whether or not to increase verbosity.
@@ -327,29 +580,28 @@ class BALMDumps(object):
 
         Returns: True if process is successful, False if otherwise.
         """
-        converter = balchivist.BALConverter()
-        sitename = converter.getNameFromDB(subject, pretext=True)
-        langname = converter.getNameFromDB(subject, format='language')
-        project = converter.getNameFromDB(subject, format='project')
-        datename = converter.getDateFromWiki(date)
-        arcdate = converter.getDateFromWiki(date, archivedate=True)
+        sitename = self.conv.getNameFromDB(wiki, pretext=True)
+        langname = self.conv.getNameFromDB(wiki, format='language')
+        project = self.conv.getNameFromDB(wiki, format='project')
+        datename = self.conv.getDateFromWiki(date)
+        arcdate = self.conv.getDateFromWiki(date, archivedate=True)
         checksums = [
             'md5sums.txt',
             'sha1sums.txt'
         ]
 
         if (path is None):
-            dumps = "%s/%s/%s" % (self.config.get('dumpdir'), subject, date)
+            dumps = "%s/%s/%s" % (self.config.get('dumpdir'), wiki, date)
         else:
             dumps = path
-        if (self.checkDumpDir(dumps, subject, date)):
+        if (self.checkDumpDir(dumps, wiki, date)):
             pass
         else:
             # The dump directory is not suitable to be used, exit the function
             return False
         count = 0
-        iaitem = balchivist.BALArchiver('%s-%s' % (subject, date))
-        allfiles = self.getDumpFiles(subject, date)
+        iaitem = balchivist.BALArchiver('%s-%s' % (wiki, date))
+        allfiles = self.getDumpFiles(wiki, date)
 
         # If --resume is given, check which files are missing
         if self.resume:
@@ -369,7 +621,7 @@ class BALMDumps(object):
 
         # Check if checksums are available and add them if they do
         for checksum in checksums:
-            filename = "%s-%s-%s" % (subject, date, checksum)
+            filename = "%s-%s-%s" % (wiki, date, checksum)
             filepath = "%s/%s" % (dumps, filename)
             if os.path.exists(filepath):
                 items.append(filename)
@@ -387,7 +639,7 @@ class BALMDumps(object):
                     "contributor": self.config.get('contributor'),
                     "mediatype": self.config.get('mediatype'),
                     "rights": self.config.get('rights'),
-                    "subject": self.subject % (subject, langname, project),
+                    "subject": self.subject % (wiki, langname, project),
                     "date": arcdate,
                     "licenseurl": self.config.get('licenseurl'),
                     "title": self.title % (sitename, datename),
@@ -416,21 +668,21 @@ class BALMDumps(object):
                 return False
         return True
 
-    def check(self, subject, date):
+    def check(self, wiki, date):
         """
         This function checks if the uploaded dump is really complete.
 
-        - subject (string): The wiki database to check.
+        - wiki (string): The wiki database to check.
         - date (string): The date of the dump in %Y%m%d format.
 
         Returns: True if complete, False if errors have occurred.
         """
         complete = True
-        allfiles = self.getDumpFiles(subject, date)
-        iaitem = balchivist.BALArchiver('%s-%s' % (subject, date))
+        allfiles = self.getDumpFiles(wiki, date)
+        iaitem = balchivist.BALArchiver('%s-%s' % (wiki, date))
         iafiles = iaitem.getFileList()
         self.common.giveMessage("Checking if all files are uploaded for %s "
-                                "on %s" % (subject, date))
+                                "on %s" % (wiki, date))
         for dumpfile in allfiles:
             if (dumpfile in iafiles):
                 continue
@@ -453,12 +705,12 @@ class BALMDumps(object):
             alldb.remove(private)
         for db in alldb:
             dumps = self.getAllDumps(db)
-            stored = self.sqldb.getAllDumps(db)
-            inprogress = self.sqldb.getAllDumps(db, progress="progress")
-            cannotarc = self.sqldb.getAllDumps(db, progress="done",
-                                               can_archive=0)
-            failed = self.sqldb.getAllDumps(db, progress="error")
-            canarc = self.sqldb.getAllDumps(db, can_archive=1)
+            stored = self.getStoredDumps(db)
+            inprogress = self.getStoredDumps(db, progress="progress")
+            cannotarc = self.getStoredDumps(db, progress="done",
+                                            can_archive=0)
+            failed = self.getStoredDumps(db, progress="error")
+            canarc = self.getStoredDumps(db, can_archive=1)
             # Step 1: Check if all new dumps are registered
             for dump in dumps:
                 if (dump in stored):
@@ -470,12 +722,11 @@ class BALMDumps(object):
                                             "%s" % (db, dump))
                     progress = self.getDumpProgress(db, dump)
                     params = {
-                        'type': 'main',
-                        'subject': db,
+                        'wiki': db,
                         'date': dump,
                         'progress': progress
                     }
-                    self.sqldb.addNewItem(params=params)
+                    self.addNewItem(params=params)
             # Step 2: Check if the status of dumps in progress have changed
             for dump in inprogress:
                 progress = self.getDumpProgress(db, dump)
@@ -483,12 +734,11 @@ class BALMDumps(object):
                     self.common.giveMessage("Updating dump progress for %s "
                                             "on %s" % (db, dump))
                     params = {
-                        'type': 'main',
-                        'subject': db,
+                        'wiki': db,
                         'date': dump,
                         'progress': progress
                     }
-                    self.sqldb.updateProgress(params=params)
+                    self.updateProgress(params=params)
                 else:
                     continue
             # Step 3: Check if the dump is available for archiving
@@ -499,12 +749,11 @@ class BALMDumps(object):
                     self.common.giveMessage("Updating can_archive for %s "
                                             "on %s" % (db, dump))
                     params = {
-                        'type': 'main',
-                        'subject': db,
+                        'wiki': db,
                         'date': dump,
                         'can_archive': 1
                     }
-                    self.sqldb.updateCanArchive(params=params)
+                    self.updateCanArchive(params=params)
                 else:
                     continue
             # Step 4: Check if failed dumps really did fail or was restarted
@@ -514,12 +763,11 @@ class BALMDumps(object):
                     self.common.giveMessage("Updating dump progress for %s "
                                             "on %s" % (db, dump))
                     params = {
-                        'type': 'main',
-                        'subject': db,
+                        'wiki': db,
                         'date': dump,
                         'progress': progress
                     }
-                    self.sqldb.updateProgress(params=params)
+                    self.updateProgress(params=params)
                 else:
                     continue
             # Step 5: Reset the can_archive statuses of old dumps
@@ -532,51 +780,56 @@ class BALMDumps(object):
                     self.common.giveMessage("Updating can_archive for %s on "
                                             "%s" % (db, dump))
                     params = {
-                        'type': 'main',
-                        'subject': db,
+                        'wiki': db,
                         'date': dump,
                         'can_archive': 0
                     }
-                    self.sqldb.updateCanArchive(params=params)
+                    self.updateCanArchive(params=params)
         return True
 
-    def dispatch(self, job, subject, date, path):
+    def dispatch(self, job, wiki, date, path):
         """
         This function is for dispatching an item to the various functions.
         """
         updatedetails = {
-            'type': 'main',
-            'subject': subject,
+            'wiki': wiki,
             'date': date
         }
+
+        # Claim the item from the database server if not in debug mode
+        if self.debug:
+            pass
+        else:
+            self.claimItem(params=updatedetails)
+
         msg = "Running %s on the main Wikimedia database " % (job)
-        msg += "dump of %s on %s" % (subject, date)
+        msg += "dump of %s on %s" % (wiki, date)
         self.common.giveMessage(msg)
         if (job == "archive"):
-            status = self.archive(subject=subject, date=date, path=path,
+            status = self.archive(wiki=wiki, date=date, path=path,
                                   verbose=self.verbose, debug=self.debug)
             if (self.debug):
                 return status
             elif (self.debug is False and status):
                 self.common.giveMessage("Marking %s on %s as archived" %
-                                        (subject, date))
-                self.sqldb.markArchived(updatedetails)
+                                        (wiki, date))
+                self.markArchived(updatedetails)
             else:
                 self.common.giveMessage("Marking %s on %s as failed"
-                                        " archive" % (subject, date))
-                self.sqldb.markFailedArchive(updatedetails)
+                                        " archive" % (wiki, date))
+                self.markFailedArchive(updatedetails)
         elif (job == "check"):
-            status = self.check(subject=subject, date=date)
+            status = self.check(wiki=wiki, date=date)
             if (self.debug):
                 return status
             elif (self.debug is False and status):
                 self.common.giveMessage("Marking %s on %s as checked" %
-                                        (subject, date))
-                self.sqldb.markChecked(updatedetails)
+                                        (wiki, date))
+                self.markChecked(updatedetails)
             else:
                 self.common.giveMessage("Marking %s on %s as failed"
-                                        " check" % (subject, date))
-                self.sqldb.markFailedCheck(updatedetails)
+                                        " check" % (wiki, date))
+                self.markFailedCheck(updatedetails)
 
     def execute(self, args=None):
         """
@@ -591,7 +844,8 @@ class BALMDumps(object):
         continuous = False
         if (args.dumpsjob == "update"):
             return self.update()
-        elif args is None or (args.dumpswiki is None and args.dumpsdate is None):
+        elif args is None or (args.dumpswiki is None and
+                              args.dumpsdate is None):
             # It is likely that --auto has been declared when args is None
             continuous = True
         elif (args.dumpswiki is None and args.dumpsdate is not None):
@@ -614,13 +868,13 @@ class BALMDumps(object):
 
             while self.getItemsLeft(job=dumpsjob) > 0:
                 itemdetails = self.getRandomItem(job=dumpsjob)
-                subject = itemdetails['subject']
+                wiki = itemdetails['wiki']
                 date = itemdetails['date']
-                self.dispatch(job=dumpsjob, subject=subject, date=date,
+                self.dispatch(job=dumpsjob, wiki=wiki, date=date,
                               path=dumpspath)
         else:
             self.resume = args.dumpsresume
-            self.dispatch(job=args.dumpsjob, subject=args.dumpswiki,
+            self.dispatch(job=args.dumpsjob, wiki=args.dumpswiki,
                           date=args.dumpsdate, path=args.dumpspath)
 
         return True
