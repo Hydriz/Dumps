@@ -543,13 +543,13 @@ class BALMDumps(object):
 
         Returns: Dict with all dumps of a wiki.
         """
+        arguments = locals()
         dumps = []
         if (wikidb is not None):
             conds = ['wiki="%s"' % wikidb]
         else:
             return dumps
 
-        arguments = locals()
         del arguments['self']
         del arguments['wikidb']
 
@@ -557,7 +557,7 @@ class BALMDumps(object):
             if (val == "all"):
                 continue
             else:
-                conds.append("%s=\"%s\"" % (key, val))
+                conds.append('%s="%s"' % (key, val))
 
         options = 'ORDER BY dumpdate DESC LIMIT 30'
         results = self.sqldb.select(dbtable=self.dbtable,
