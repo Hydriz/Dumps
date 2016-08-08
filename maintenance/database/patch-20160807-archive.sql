@@ -6,4 +6,4 @@
 ALTER TABLE archive
     RENAME TO dumps,
     DROP COLUMN type,
-    RENAME COLUMN subject TO wiki;
+    CHANGE COLUMN subject wiki VARCHAR(255);
