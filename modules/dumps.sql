@@ -1,4 +1,4 @@
--- Tables for Balchivist SQL backend
+-- Tables for the main Wikimedia dumps module
 
 CREATE TABLE dumps (
 	wiki VARCHAR(255),
