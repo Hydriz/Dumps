@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA, or visit
 # <http://www.gnu.org/copyleft/gpl.html>
 
-BALVERSION = '1.2.0'
+BALVERSION = '1.3.0'
 
 from archiver import BALArchiver
 from common import BALCommon, IncorrectUsage
