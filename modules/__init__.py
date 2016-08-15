@@ -16,3 +16,4 @@
 # <http://www.gnu.org/copyleft/gpl.html>
 
 from dumps import BALMDumps
+from wikidata import BALMWikidata

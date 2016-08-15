@@ -1,24 +1,31 @@
 [main]
 # The database that holds the dump progress
 database = balchivist
+
 # The database host
 host = localhost
+
 # The file containing your MySQL credentials
 defaults_file = ~/.my.cnf
+
 # The file to log all events and messages to
 logfile = output.log
+
 # The modules to be made available to Balchivist (those in the modules directory without the ".py" extension)
-modules = ["dumps"]
+modules = ["dumps", "wikidata"]
 
 [dumps]
 # The directory containing the dump files in the format:
 # %(dumpdir)/%(wikidb)/%(dumpdate)
 dumpdir = /public/dumps/public
+
 # The server root of the Wikimedia dumps service
 dumps = https://dumps.wikimedia.org
+
 # The URLs to the respective database lists
 alldblist = https://noc.wikimedia.org/conf/all.dblist
 privatedblist = https://noc.wikimedia.org/conf/private.dblist
+
 # The following are for the metadata of the Internet Archive item
 collection = wikimediadownloads
 creator = Wikimedia projects editors
@@ -26,3 +33,19 @@ contributor = Wikimedia Foundation
 mediatype = web
 rights = Permission is granted under the Wikimedia Foundation's <a href="https://wikimediafoundation.org/wiki/Terms_of_Use">Terms of Use</a>. There are also additional <a href="https://archive.org/download/wikimediadownloads/legal.html">copyrights information available</a>
 licenseurl = http://creativecommons.org/licenses/by-sa/3.0/
+
+[wikidata]
+# The base directory for all Wikibase dumps (no trailing slash)
+# This directory should be the one that contains all the wiki databases
+baseurl = https://dumps.wikimedia.org/other/wikibase
+
+# The directory to store the Wikibase dump files temporarily
+dumpdir = /data/project/temp
+
+# The following are for the metadata of the Internet Archive item
+collection = wikimedia-other
+creator = Wikidata editors
+contributor = Wikimedia Foundation
+mediatype = web
+rights = Permission is granted under the Wikimedia Foundation's <a href="https://wikimediafoundation.org/wiki/Terms_of_Use">Terms of Use</a>. There are also additional <a href="https://archive.org/download/wikimediadownloads/legal.html">copyrights information available</a>
+licenseurl = https://creativecommons.org/publicdomain/zero/1.0/
