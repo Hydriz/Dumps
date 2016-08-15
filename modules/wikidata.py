@@ -45,8 +45,6 @@ class BALMWikidata(object):
         self.config = balchivist.BALConfig('wikidata')
         self.sqldb = sqldb
         self.dbtable = "wikidata"
-        self.common = balchivist.BALCommon(verbose=self.verbose,
-                                           debug=self.debug)
         self.conv = balchivist.BALConverter()
         self.resume = False
 
@@ -64,6 +62,8 @@ class BALMWikidata(object):
         ]
         # A size hint for the Internet Archive, currently set at 100GB
         self.sizehint = "107374182400"
+        self.common = balchivist.BALCommon(verbose=self.verbose,
+                                           debug=self.debug)
 
     def argparse(self, parser=None):
         """
@@ -109,11 +109,12 @@ class BALMWikidata(object):
         regex = r'<a href="(?P<link>[^>]+)/">'
         m = re.compile(regex).finditer(raw)
         for i in m:
-            if (i == ".."):
+            database = i.group('link')
+            if (database == ".."):
                 # Skip the parent directory
                 continue
             else:
-                links.append(i.group('link'))
+                links.append(database)
         return sorted(links)
 
     def getDatabases(self):
@@ -636,8 +637,7 @@ class BALMWikidata(object):
                     self.addNewItem(params=params)
             # Step 2: Check if the dump is suitable for archiving
             for dump in cannotarc:
-                dumpdate = time.strptime(dump, "%Y%m%d")
-                if (dumpdate <= lastweek.strftime("%Y%m%d")):
+                if (dump <= lastweek.strftime("%Y%m%d") and dump in alldumps):
                     # The dump is now suitable to be archived
                     self.common.giveMessage("Updating can_archive for %s "
                                             "on %s" % (db, dump))
