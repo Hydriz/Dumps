@@ -241,13 +241,11 @@ class BALMWikidata(object):
                                            database, dumpdate, dumpfile)
                 fileopener.retrieve(fileurl, dumpfile)
 
-    def checkDumpDir(self, path, database, dumpdate, filelist):
+    def checkDumpDir(self, path, filelist):
         """
         This function is used to check if the given dump directory is complete.
 
         - path (string): The path to the dump directory.
-        - database (string): The wiki database for the current dump.
-        - dumpdate (string in %Y%m%d format): The date of the current dump.
         - filelist (list): A list of files generated from self.getFiles().
         """
         if (os.path.exists(path)):
@@ -555,7 +553,7 @@ class BALMWikidata(object):
         else:
             dumps = path
 
-        if (self.checkDumpDir(dumps, database, dumpdate, items)):
+        if (self.checkDumpDir(path=dumps, filelist=items)):
             pass
         else:
             # The dump directory is not suitable to be used, exit the function
