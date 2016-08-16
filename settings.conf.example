@@ -37,6 +37,7 @@ licenseurl = http://creativecommons.org/licenses/by-sa/3.0/
 [wikidata]
 # The base directory for all Wikibase dumps (no trailing slash)
 # This directory should be the one that contains all the wiki databases
+# Mirrors can be used as well, provided that the relevant data exists
 baseurl = https://dumps.wikimedia.org/other/wikibase
 
 # The directory to store the Wikibase dump files temporarily

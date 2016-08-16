@@ -17,6 +17,8 @@
 import datetime
 import os
 import re
+import shutil
+import socket
 import time
 import urllib
 
@@ -47,6 +49,7 @@ class BALMWikidata(object):
         self.dbtable = "wikidata"
         self.conv = balchivist.BALConverter()
         self.resume = False
+        self.hostname = socket.gethostname()
 
         if (argparse):
             self.verbose = False
@@ -106,13 +109,15 @@ class BALMWikidata(object):
         raw = page.read()
         page.close()
 
-        regex = r'<a href="(?P<link>[^>]+)/">'
+        regex = r'<a href="(?P<link>[^>]+)">'
         m = re.compile(regex).finditer(raw)
         for i in m:
             database = i.group('link')
-            if (database == ".."):
+            if (database == "../"):
                 # Skip the parent directory
                 continue
+            elif (database.endswith('/')):
+                links.append(database[:-1])
             else:
                 links.append(database)
         return sorted(links)
@@ -228,9 +233,13 @@ class BALMWikidata(object):
 
         os.chdir(dumps)
         for dumpfile in dumpfiles:
-            fileurl = "%s/%s/%s/%s" % (self.config.get('baseurl'), database,
-                                       dumpdate, dumpfile)
-            fileopener.retrieve(fileurl, dumpfile)
+            if (os.path.isfile(dumpfile)):
+                continue
+            else:
+                self.common.giveMessage("Downloading file: %s" % (dumpfile))
+                fileurl = "%s/%s/%s/%s" % (self.config.get('baseurl'),
+                                           database, dumpdate, dumpfile)
+                fileopener.retrieve(fileurl, dumpfile)
 
     def checkDumpDir(self, path, database, dumpdate):
         """
@@ -525,7 +534,7 @@ class BALMWikidata(object):
         else:
             dumps = path
 
-        if (self.checkDumpDir(path)):
+        if (self.checkDumpDir(dumps, database, dumpdate)):
             pass
         else:
             # The dump directory is not suitable to be used, exit the function
@@ -578,6 +587,8 @@ class BALMWikidata(object):
                 count += 1
             else:
                 return False
+        rmtree = "%s/%s" % (self.config.get('dumpdir'), database)
+        shutil.rmtree(rmtree)
 
         return True
 
@@ -684,7 +695,7 @@ class BALMWikidata(object):
         msg += "for %s on %s" % (wiki, date)
         self.common.giveMessage(msg)
         if (job == "archive"):
-            status = self.archive(wiki=wiki, date=date, path=path,
+            status = self.archive(database=wiki, dumpdate=date, path=path,
                                   verbose=self.verbose, debug=self.debug)
             if (self.debug):
                 return status
@@ -697,7 +708,7 @@ class BALMWikidata(object):
                                         " archive" % (wiki, date))
                 self.markFailedArchive(updatedetails)
         elif (job == "check"):
-            status = self.check(wiki=wiki, date=date)
+            status = self.check(database=wiki, dumpdate=date)
             if (self.debug):
                 return status
             elif (self.debug is False and status):
