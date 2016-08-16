@@ -214,15 +214,15 @@ class BALMWikidata(object):
         }
         return metadata
 
-    def downloadFiles(self, database, dumpdate):
+    def downloadFiles(self, database, dumpdate, filelist):
         """
         This function is used for downloading all the available dump files for
         a given wiki and saves them into the temporary directory.
 
         - database (string): The database for the dump files.
         - dumpdate (string in %Y%m%d format): The date of the current dump.
+        - filelist (list): A list of files generated from self.getFiles().
         """
-        dumpfiles = self.getFiles(database=database, dumpdate=dumpdate)
         fileopener = urllib.URLopener()
         dumps = "%s/%s/%s" % (self.config.get('dumpdir'), database, dumpdate)
 
@@ -232,7 +232,7 @@ class BALMWikidata(object):
             os.makedirs(dumps)
 
         os.chdir(dumps)
-        for dumpfile in dumpfiles:
+        for dumpfile in filelist:
             if (os.path.isfile(dumpfile)):
                 continue
             else:
@@ -241,13 +241,14 @@ class BALMWikidata(object):
                                            database, dumpdate, dumpfile)
                 fileopener.retrieve(fileurl, dumpfile)
 
-    def checkDumpDir(self, path, database, dumpdate):
+    def checkDumpDir(self, path, database, dumpdate, filelist):
         """
         This function is used to check if the given dump directory is complete.
 
         - path (string): The path to the dump directory.
         - database (string): The wiki database for the current dump.
         - dumpdate (string in %Y%m%d format): The date of the current dump.
+        - filelist (list): A list of files generated from self.getFiles().
         """
         if (os.path.exists(path)):
             files = os.listdir(path)
@@ -258,8 +259,7 @@ class BALMWikidata(object):
                                          "exist!")
             return False
 
-        allfiles = self.getFiles(database, dumpdate)
-        for dumpfile in allfiles:
+        for dumpfile in filelist:
             if (dumpfile in files):
                 continue
             else:
@@ -527,19 +527,6 @@ class BALMWikidata(object):
 
         Returns: True if process is successful, False if otherwise.
         """
-        if (path is None):
-            dumps = "%s/%s/%s" % (self.config.get('dumpdir'), database,
-                                  dumpdate)
-            self.downloadFiles(database=database, dumpdate=dumpdate)
-        else:
-            dumps = path
-
-        if (self.checkDumpDir(dumps, database, dumpdate)):
-            pass
-        else:
-            # The dump directory is not suitable to be used, exit the function
-            return False
-
         count = 0
         identifier = "wikibase-%s-%s" % (database, dumpdate)
         iaitem = balchivist.BALArchiver(identifier)
@@ -559,6 +546,20 @@ class BALMWikidata(object):
                 return True
         else:
             items = allfiles
+
+        if (path is None):
+            dumps = "%s/%s/%s" % (self.config.get('dumpdir'), database,
+                                  dumpdate)
+            self.downloadFiles(database=database, dumpdate=dumpdate,
+                               filelist=items)
+        else:
+            dumps = path
+
+        if (self.checkDumpDir(dumps, database, dumpdate, items)):
+            pass
+        else:
+            # The dump directory is not suitable to be used, exit the function
+            return False
 
         os.chdir(dumps)
         for dumpfile in items:
@@ -587,8 +588,11 @@ class BALMWikidata(object):
                 count += 1
             else:
                 return False
-        rmtree = "%s/%s" % (self.config.get('dumpdir'), database)
-        shutil.rmtree(rmtree)
+
+        if (path is None):
+            pass
+        else:
+            shutil.rmtree(dumps)
 
         return True
 
