@@ -49,7 +49,7 @@ class BALMMediacounts(object):
         self.hostname = socket.gethostname()
         self.tempdir = self.config.get('dumpdir')
         self.filelist = [
-            "mediacounts.%s.v00.tsv.bz2"
+            "mediacounts.%s.v00.tsv.bz2",
             "mediacounts.top1000.%s.v00.csv.zip"
         ]
 
@@ -131,7 +131,10 @@ class BALMMediacounts(object):
         Returns list of all files.
         """
         arcdate = self.conv.getDateFromWiki(dumpdate, archivedate=True)
-        return self.filelist % (arcdate, arcdate)
+        output = []
+        for dumpfile in self.filelist:
+            output.append(dumpfile % (arcdate))
+        return output
 
     def downloadFiles(self, dumpdate, filelist):
         """
@@ -153,7 +156,10 @@ class BALMMediacounts(object):
                 d = datetime.datetime.strptime(dumpdate, '%Y%m%d')
                 fileurl = "%s/%s/%s" % (self.config.get('baseurl'),
                                         d.strftime('%Y'), dumpfile)
-                fileopener.retrieve(fileurl, dumpfile)
+                try:
+                    fileopener.retrieve(fileurl, dumpfile)
+                except:
+                    return False
 
     def removeFiles(self, filelist):
         """
