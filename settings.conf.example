@@ -34,6 +34,23 @@ mediatype = web
 rights = Permission is granted under the Wikimedia Foundation's <a href="https://wikimediafoundation.org/wiki/Terms_of_Use">Terms of Use</a>. There are also additional <a href="https://archive.org/download/wikimediadownloads/legal.html">copyrights information available</a>
 licenseurl = http://creativecommons.org/licenses/by-sa/3.0/
 
+[mediacounts]
+# The base directory for all the mediacounts dumps (no trailing slash)
+# This directory should be the one that contains the years
+# Mirrors can be used as well, provided that the relevant data exists
+baseurl = https://dumps.wikimedia.org/other/mediacounts/daily
+
+# The directory to store the mediacounts dump files temporarily
+dumpdir = /data/project/temp
+
+# The following are for the metadata of the Internet Archive item
+collection = wikimediadownloads
+contributor = Wikimedia Foundation
+mediatype = web
+subject = wiki;dumps;data dumps;mediacounts;analytics
+rights = Permission is granted under the Wikimedia Foundation's <a href="https://wikimediafoundation.org/wiki/Terms_of_Use">Terms of Use</a>. There are also additional <a href="https://archive.org/download/wikimediadownloads/legal.html">copyrights information available</a>
+licenseurl = https://creativecommons.org/publicdomain/zero/1.0/
+
 [wikidata]
 # The base directory for all Wikibase dumps (no trailing slash)
 # This directory should be the one that contains all the wiki databases

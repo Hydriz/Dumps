@@ -16,4 +16,5 @@
 # <http://www.gnu.org/copyleft/gpl.html>
 
 from dumps import BALMDumps
+from mediacounts import BALMMediacounts
 from wikidata import BALMWikidata
