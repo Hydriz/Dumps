@@ -355,7 +355,7 @@ class BALMMediacounts(object):
         }
         arcdate = self.conv.getDateFromWiki(dumpdate, archivedate=True)
         return self.sqldb.update(dbtable=self.dbtable, values=vals,
-                                 conds="dumpdate=%s" % (arcdate))
+                                 conds="dumpdate=\"%s\"" % (arcdate))
 
     def markArchived(self, dumpdate):
         """
@@ -371,7 +371,7 @@ class BALMMediacounts(object):
         }
         arcdate = self.conv.getDateFromWiki(dumpdate, archivedate=True)
         return self.sqldb.update(dbtable=self.dbtable, values=vals,
-                                 conds="dumpdate=%s" % (arcdate))
+                                 conds="dumpdate=\"%s\"" % (arcdate))
 
     def markChecked(self, dumpdate):
         """
@@ -387,7 +387,7 @@ class BALMMediacounts(object):
         }
         arcdate = self.conv.getDateFromWiki(dumpdate, archivedate=True)
         return self.sqldb.update(dbtable=self.dbtable, values=vals,
-                                 conds="dumpdate=%s" % (arcdate))
+                                 conds="dumpdate=\"%s\"" % (arcdate))
 
     def markFailedArchive(self, dumpdate):
         """
@@ -403,7 +403,7 @@ class BALMMediacounts(object):
         }
         arcdate = self.conv.getDateFromWiki(dumpdate, archivedate=True)
         return self.sqldb.update(dbtable=self.dbtable, values=vals,
-                                 conds="dumpdate=%s" % (arcdate))
+                                 conds="dumpdate=\"%s\"" % (arcdate))
 
     def markFailedCheck(self, dumpdate):
         """
@@ -419,7 +419,7 @@ class BALMMediacounts(object):
         }
         arcdate = self.conv.getDateFromWiki(dumpdate, archivedate=True)
         return self.sqldb.update(dbtable=self.dbtable, values=vals,
-                                 conds="dumpdate=%s" % (arcdate))
+                                 conds="dumpdate=\"%s\"" % (arcdate))
 
     def claimItem(self, dumpdate):
         """
@@ -437,7 +437,7 @@ class BALMMediacounts(object):
             }
             arcdate = self.conv.getDateFromWiki(dumpdate, archivedate=True)
             return self.sqldb.update(dbtable=self.dbtable, values=vals,
-                                     conds="dumpdate=%s" % (arcdate))
+                                     conds="dumpdate=\"%s\"" % (arcdate))
 
     def archive(self, dumpdate, path=None, verbose=False, debug=False):
         """
@@ -635,8 +635,7 @@ class BALMMediacounts(object):
                 mediacountspath = args.mediacountspath
 
             while self.getItemsLeft(job=mediacountsjob) > 0:
-                itemdetails = self.getRandomItem(job=mediacountsjob)
-                date = itemdetails['date']
+                date = self.getRandomItem(job=mediacountsjob)
                 self.dispatch(job=mediacountsjob, date=date,
                               path=mediacountspath)
         else:
