@@ -317,6 +317,29 @@ class BALMMediacounts(object):
 
         return output
 
+    def addNewItem(self, dumpdate):
+        """
+        This function is used for adding new dumps into the database.
+
+        - dumpdate (string in %Y%m%d format): The date of the dump to add.
+
+        Returns: True if the update is successful, False if an error occured.
+        """
+        try:
+            arcdate = self.conv.getDateFromWiki(dumpdate, archivedate=True)
+        except ValueError:
+            return False
+
+        values = {
+            'dumpdate': '"%s"' % (arcdate),
+            'claimed_by': 'NULL',
+            'can_archive': '"0"',
+            'is_archived': '"0"',
+            'is_checked': '"0"',
+            'comments': 'NULL'
+        }
+        return self.sqldb.insert(dbtable=self.dbtable, values=values)
+
     def updateCanArchive(self, dumpdate, can_archive):
         """
         This function is used to update the status of whether a dump can be
